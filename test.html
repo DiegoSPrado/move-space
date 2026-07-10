@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+      <title>Teste DrMove</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 20px;
+      border-radius: 5px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    button {
+      padding: 10px 15px;
+      margin: 5px;
+      border: none;
+      border-radius: 4px;
+      background-color: #4CAF50;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    h1 {
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+          <h1>Teste de Funcionalidade - DrMove</h1>
+    <p>Este é um teste para verificar se o Electron está funcionando corretamente.</p>
+    
+    <div>
+      <h2>Navegação</h2>
+      <button id="btnDashboard">Dashboard</button>
+      <button id="btnControl">Control</button>
+      <button id="btnResult">Result</button>
+      <button id="btnConfig">Config</button>
+    </div>
+
+    <div>
+      <h2>Informações do Sistema</h2>
+      <pre id="sysInfo"></pre>
+    </div>
+  </div>
+
+  <script>
+    // Função para simular navegação
+    function navigateTo(route) {
+      console.log('Navegando para:', route);
+      alert('Tentando navegar para: ' + route);
+      // Em uma implementação real, isso iria mudar a rota no React Router
+      window.location.hash = route;
+    }
+
+    // Configurar os botões
+    document.getElementById('btnDashboard').addEventListener('click', () => navigateTo('/'));
+    document.getElementById('btnControl').addEventListener('click', () => navigateTo('/control'));
+    document.getElementById('btnResult').addEventListener('click', () => navigateTo('/result'));
+    document.getElementById('btnConfig').addEventListener('click', () => navigateTo('/config'));
+
+    // Mostrar informações do sistema
+    const sysInfoElement = document.getElementById('sysInfo');
+    sysInfoElement.innerText = `
+      User Agent: ${navigator.userAgent}
+      Platform: ${navigator.platform}
+      Language: ${navigator.language}
+      Screen: ${window.screen.width}x${window.screen.height}
+      Window: ${window.innerWidth}x${window.innerHeight}
+    `;
+
+    // Verificar se temos acesso às APIs do Electron via contextBridge
+    if (window.api) {
+      const apiInfo = document.createElement('div');
+      apiInfo.innerHTML = '<h3>API Electron detectada!</h3>';
+      document.querySelector('.container').appendChild(apiInfo);
+
+      // Tentar listar portas seriais
+      if (window.api.listSerialPorts) {
+        window.api.listSerialPorts().then(ports => {
+          const portsInfo = document.createElement('div');
+          portsInfo.innerHTML = `<h3>Portas seriais disponíveis: ${ports.length}</h3>
+            <pre>${JSON.stringify(ports, null, 2)}</pre>`;
+          document.querySelector('.container').appendChild(portsInfo);
+        }).catch(err => {
+          console.error('Erro ao listar portas:', err);
+        });
+      }
+    }
+  </script>
+</body>
+</html> 

@@ -1,0 +1,151 @@
+.grid-docker-component{
+    grid-row: 1;
+    grid-column: 1/6;
+}
+
+.grid-comp-performance {
+    grid-row: 2/4;
+    grid-column: 5;
+}
+
+.grid-man-running-component {
+    grid-row: 2/4;
+    grid-column: 1;
+}
+
+.grid-conveyor-component{
+    grid-row: 2;
+    grid-column: 2/5;
+}
+
+.grid-smallDiv-component{
+    grid-row: 3;
+    grid-column: 2/5;
+}
+
+.grid-options-component{
+    grid-row: 4;
+    grid-column: 1/5;
+}
+.arc-wrapper-small {
+  position: relative;
+  width: 60px;
+  height: 60px;
+  padding: 10px;
+}
+
+.arc-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 1;
+}
+
+.arc-range-input {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 60px;
+  height: 60px;
+  z-index: 2;
+  background: none;
+  appearance: none;
+  cursor: pointer;
+  opacity: 0;
+  
+}
+/* Adiciona bordas arredondadas nas pontas do arco */
+.semi-circle::before,
+.semi-circle::after {
+  content: "";
+  width: 10px;
+  height: 12px;
+  background-color: #bd1e51;
+  border-radius: 50%;
+  position: absolute;
+  top: 13px;
+}
+
+/* Esquerda */
+.semi-circle::before {
+  left: -10px;
+}
+
+/* Direita */
+.semi-circle::after {
+  right: -10px;
+}
+
+/* bolinha no topo do arco */
+.indicator {
+  width: 18px;
+  height: 18px;
+  background-color: #ff3b67; /* cor da bolinha */
+  border-radius: 50%;
+  position: absolute;
+  top: -12px;
+  right: 20px; /* ajusta para posição certa no arco */
+}
+
+.indicator-externo {
+  width: 18px;
+  height: 18px;
+  background-color: #21940C; /* cor da bolinha */
+  border-radius: 50%;
+  position: absolute;
+  top: -12px;
+  right: 20px; /* ajusta para posição certa no arco */
+}
+
+/* número abaixo do arco */
+.number {
+  margin-top: 20px;
+  font-size: 32px;
+  font-weight: bold;
+  color: white;
+
+}
+
+/* Modal style*/
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background-color: #0B0121;
+  padding: 2rem;
+  border-radius: 10px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  animation: fadeIn 0.3s ease-in-out;
+}
+
+
+
+
+
+.open-btn:hover, .close-btn:hover {
+  background-color: #3700b3;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

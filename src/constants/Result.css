@@ -1,0 +1,171 @@
+.container-result {
+  background-image: url(../assets/images/results/background.png);
+  background-size: cover;
+  height: 100vh;
+}
+
+.clip-rounded {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: #ffffff;
+  text-align: center;
+  margin-top: 30px;
+}
+
+.div-title-result {
+  width: 436px;
+  height: 73px;
+  background-image: url(../assets//images//results/result-shape-title.png);
+  background-size: cover;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  transform: translateY(-18px);
+}
+
+.result-title {
+  font-weight: bold;
+  line-height: 100%;
+  letter-spacing: -1px;
+  text-align: center;
+  color: #ffffff;
+}
+
+.btn-back {
+  position: absolute;
+  top: 120px;
+  left: 20px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  padding: 10px;
+  text-decoration: none;
+  color: #ffffff;
+  background: linear-gradient(
+    180deg,
+    rgba(55, 12, 148, 0.8) 0%,
+    rgba(11, 1, 33, 0) 165.57%
+  );
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  z-index: 100;
+}
+
+.container-velocimeter {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 422px;
+  height: 422px;
+  border-radius: 50%;
+  border: 3px solid #00aeef;
+}
+
+.velocimeter-div-result {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  background-image: url(../assets/images/circulo-velocimetro-1.png);
+  border-radius: 50%;
+  border: 3px solid #00aeef;
+  width: 96%;
+  height: 96%;
+}
+
+.calories-result {
+  font-weight: bold;
+  font-size: 200px;
+  letter-spacing: -2px;
+  text-align: center;
+  align-items: flex-end;
+  color: #ff2424;
+
+  backdrop-filter: blur(130px);
+}
+
+.results-cal-div {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  transform: translateY(180px);
+  filter: drop-shadow(5px 5px 5px black);
+  z-index: 1;
+}
+
+.calories-span {
+  font-weight: bold;
+  font-size: 35px;
+  line-height: 100%;
+  letter-spacing: 0px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* results right styles*/
+.div-results-right {
+  position: relative;
+  width: 490px;
+  height: 472px;
+  background-image: url(../assets//images/results/result-shape-right.png);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background-size: cover;
+  transform: translate(-71px, -30px);
+}
+
+.results-right-div-content {
+  display: flex;
+  align-items: center;
+  padding: 10px;
+}
+
+.div-results-left {
+  position: relative;
+  width: 490px;
+  height: 477px;
+  background-image: url(../assets//images/results/result-shape-left.png);
+  background-size: cover;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transform: translate(72px, -30px);
+}
+
+.control-result {
+  position: relative;
+  bottom: 0;
+  right: 80px;
+  width: 100px;
+  display: flex;
+}
+
+.btn-control-result {
+  background-color: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.bars {
+  display: flex;
+  gap: 4px;
+  perspective: 800px;
+}
+
+.bar {
+  width: 6px;
+  height: 26px;
+  background: rgba(255, 255, 255, 0.1);
+  transform-style: preserve-3d;
+  transition: 0.3s;
+}
+
+.bar.active {
+  background: #5ed6ff;
+}

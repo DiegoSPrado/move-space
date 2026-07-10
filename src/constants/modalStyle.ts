@@ -1,0 +1,31 @@
+export const styles = {
+  overlay: {
+    position: 'fixed',
+    top: 0, left: 0,
+    width: '100vw', height: '100vh',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 9999,
+  },
+  modal: {
+    background: '#0B0121',
+    padding: '20px',
+    borderRadius: '12px',
+    width: '90%',
+    maxWidth: '600px',
+    boxShadow: '0 10px 30px rgba(0,0,0,0.3)',
+    position: 'relative',
+  },
+  closeButton: {
+    position: 'absolute',
+    top: '10px',
+    right: '16px',
+    fontSize: '24px',
+    background: 'transparent',
+    border: 'none',
+    cursor: 'pointer',
+    color: '#555',
+  },
+};
