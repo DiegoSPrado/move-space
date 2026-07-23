@@ -1,12 +1,23 @@
+@font-face {
+  font-family: 'SF Pro';
+  src: url('../assets/fonts/SF-Pro.ttf') format('truetype');
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'DS-DIGI';
+  src: url('../assets/fonts/DS-DIGI.TTF') format('truetype');
+  font-display: swap;
+}
+
 body {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', 'Roboto', 'Oxygen',
+  font-family: 'DS-DIGI', -apple-system, BlinkMacSystemFont, 'SF Pro', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
-
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',

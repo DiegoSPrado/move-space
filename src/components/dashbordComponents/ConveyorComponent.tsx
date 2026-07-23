@@ -19,6 +19,9 @@ interface ConveyorControlProps {
   distance: number;
   temperature: number;
   pressure: number;
+  running: boolean;
+  onStart: () => void;
+  onStop: () => void;
 }
 
 const ConveyorComponent: React.FC<ConveyorControlProps> = ({
@@ -30,11 +33,15 @@ const ConveyorComponent: React.FC<ConveyorControlProps> = ({
   distance,
   temperature,
   pressure,
+  running,
+  onStart,
+  onStop
 }) => {
   const navigate = useNavigate();
   const [inclination, setInclination] = useState<number>(0);
   const [speedError, setSpeedError] = useState<string>("");
   const [inclinationError, setInclinationError] = useState<string>("");
+  
 
   useEffect(() => {
     if (!isConnected) {
@@ -104,6 +111,8 @@ const ConveyorComponent: React.FC<ConveyorControlProps> = ({
       setSpeedError("Failed to send speed command");
       console.error(error);
     }
+
+    
   };
 
   return (
@@ -117,7 +126,10 @@ const ConveyorComponent: React.FC<ConveyorControlProps> = ({
         distance={distance}
         temperature={temperature}
         pressure={pressure}
-      />
+        running={speed > 0}
+        onStart={onStart}
+        onStop={onStop}
+        />
     </div>
   );
 };

@@ -1,4 +1,5 @@
-import Logo from "../../assets/images/Logo.png";
+import Logo from "../../assets/images/movespace.png";
+
 import Avatar from "../../assets/images/headerimages/Avatar.png";
 import SettingsIcon from "../../assets/images/headerimages/settings.png";
 import VolumeIcon from "../../assets/images/headerimages/volume-on.png";
@@ -7,16 +8,21 @@ import BluetoothIcon from "../../assets/images/headerimages/bluetooth.png";
 import React, { useEffect, useState, useCallback } from "react";
 import SerialPortSelector from "../../components/SerialPortSelector";
 import { ConnectionStatus } from "../../types";
-import { data, Link } from "react-router-dom";
+import { data, Link, useNavigate } from "react-router-dom";
 import { parseResponse } from "../../utils/SerialCommunication";
 import "../../constants/Dashboard.css";
 
+
+
 type AppHeaderProps = {
+
   onClose: () => void;
 };
 
-function AppHeader({ onClose }: AppHeaderProps) {
+const AppHeader: React.FC<AppHeaderProps> = ({ onClose }) => {
+  
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [neonOn, setNeonOn] = useState<boolean>(false);
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
     connected: false,
     portPath: "",
@@ -27,6 +33,9 @@ function AppHeader({ onClose }: AppHeaderProps) {
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
   const [temperature, setTemperature] = useState<number | undefined>(undefined);
+
+
+
 
   const handleSerialData = useCallback((data: string) => {
     // For backward compatibility, if data is a string but we expect Uint8Array
@@ -59,6 +68,8 @@ function AppHeader({ onClose }: AppHeaderProps) {
       }
     }
   }, []);
+
+  const navigate = useNavigate();
 
   // Setup serial data listener
   useEffect(() => {
@@ -134,32 +145,16 @@ function AppHeader({ onClose }: AppHeaderProps) {
 
   return (
     <div className="App-Header">
-      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-        <div>
-          <img src={Avatar} alt="User Pfp" />
-        </div>
-        <div>
-          <p className="user-name">Maria dos Santos</p>
-          <Link to={"/"}>
-            <p className="logout-header">logout</p>
-          </Link>
-        </div>
-      </div>
-      <div className="btns-header-div">
-        <button className="btn-anamnese"></button>
-        <p>ANAMNESE</p>
-      </div>
-      <div className="btns-header-div">
-        <button className="btn-cadastro"></button>
-        <p>CADASTRO</p>
-      </div>
+      
+      
+
       {connectionStatus.connected && (
         <div>
           connected at port: {connectionStatus.portPath} -{" "}
           {connectionStatus.baudRate}
         </div>
       )}
-      <img src={Logo} alt="Logo DrMove" style={{ margin: "auto" }} />
+      
       <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
         <img src={VolumeIcon} alt="Icone do volume" />
         <div style={{ cursor: "pointer" }} onClick={onClose}>

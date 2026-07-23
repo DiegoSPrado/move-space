@@ -125,7 +125,7 @@ function LedsComponent({
               marginBottom: "2px",
             }}
           >
-            LED EXTERNO
+            <p className='dash-subtitles'>LED EXTERNO</p>
           </div>
           <div style={{ width: "160px", height: "160px" }}>
             <HexColorPicker
@@ -146,7 +146,7 @@ function LedsComponent({
               marginBottom: "2px",
             }}
           >
-            LED INTERNO
+           <p className='dash-subtitles'>LED INTERNO</p>
           </div>
           <div style={{ width: "160px", height: "160px" }}>
             <HexColorPicker

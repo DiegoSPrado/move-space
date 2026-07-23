@@ -135,7 +135,10 @@ function Result() {
         </div>
       </main>
       <div style={{ margin: "20px" }}>
-        <OptionsDashComponent />
+        <OptionsDashComponent 
+          isConnected={false}
+          onSendCommand={() => Promise.resolve()}
+        />
       </div>
     </div>
   );

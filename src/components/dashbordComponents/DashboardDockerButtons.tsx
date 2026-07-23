@@ -1,8 +1,9 @@
 import TemperaturaImg from "../../assets/images/Temperatura1.png";
 import VacuoImg from "../../assets/images/Vacuo1.png";
 import CronometroImg from "../../assets/images/Cronometro-1.png";
-import DistanciaImg from "../../assets/images/Distancia3-1.png";
-import ColagenoImg from "../../assets/images/Colageno2-1.png";
+import CapsulaOffImg from "../../assets/images/capsulaoff.png";
+import CapsulaTemp from "../../assets/images/capsulatemp.png";
+import CapsulaImg from "../../assets/images/ChatGPT Image 15 de jul. de 2026, 14_15_53.png";
 import { useNavigate } from "react-router-dom";
 import "../../constants/Dashboard.css";
 import React, { useState, useEffect, useRef } from "react";
@@ -136,6 +137,8 @@ function DockerButtonComponent({
 
   useEffect(() => {
     if (!isConnected) {
+      setTemperatureSetpoint(25);
+      setPressureSetpoint(1013.2);
       setDistance(0);
       setLastSpeed(0);
       setLastTimeCalculated(0);
@@ -161,22 +164,25 @@ function DockerButtonComponent({
 
   useEffect(() => {
     if (!isConnected) {
-      handleRequestData();
       setIsColagenoOn(false);
-      setTemperatureSetpoint(0);
-      setPressureSetpoint(0);
+      setTemperatureSetpoint(25);
+      setPressureSetpoint(1013.2);
       setIsAutoMode(false);
       setHeaterPower(0);
       setPumpPower(0);
       setIsRunning(false);
       setError("");
+      lastSpeedRef.current = 0;
     } else {
+      // When connected, request current temperature and pressure data
+      handleRequestData();
+      
       // When connected, explicitly set the device to manual mode
       const initializeManualMode = async () => {
         try {
           console.log("[INIT] Setting device operation mode to MANUAL");
           // Set operation mode to MANUAL (false = manual, true = auto)
-          const manualModeCommand = setOperationMode(false);
+          const manualModeCommand = setOperationMode(true);
           await onSendCommand(manualModeCommand);
           console.log("[INIT] Successfully set device to MANUAL mode");
         } catch (error) {
@@ -190,7 +196,20 @@ function DockerButtonComponent({
   }, [isConnected, handleRequestData, onSendCommand]);
 
   useEffect(() => {
-  
+    if (!isConnected) {
+      lastSpeedRef.current = 0;
+      return;
+    }
+
+    if (lastSpeedRef.current === 0 && speed > 0) {
+      handleRequestData();
+    }
+
+    lastSpeedRef.current = speed;
+  }, [isConnected, speed, handleRequestData]);
+
+  useEffect(() => {
+   
   if (isConnected && speed && speed > 0) {
     setIsRunning(true);
   } else {
@@ -210,23 +229,7 @@ function DockerButtonComponent({
   });
 };
 
-  const handleColagenoToggle = async () => {
-    if (!isConnected) {
-      console.log("[DOCKER] Not connected to a device");
-      return;
-    }
 
-    try {
-      setError("");
-      const newState = !isColagenoOn;
-      const command = setLampState(newState);
-      await onSendCommand(command);
-      setIsColagenoOn(newState);
-    } catch (error) {
-      setError("Failed to toggle colageno lamp");
-      console.error(error);
-    }
-  };
 
   function formatTime(seconds: number) {
     
@@ -438,7 +441,7 @@ function DockerButtonComponent({
 
   const handleToggleMode = async () => {
     if (!isConnected) {
-      console.log("[DOCKER] Not connected to a device");
+      setError("Not connected to a device");
       return;
     }
 
@@ -454,47 +457,7 @@ function DockerButtonComponent({
     }
   };
 
-  const handleSetHeaterPower = async () => {
-    if (!isConnected) {
-      console.log("[DOCKER] Not connected to a device");
-      return;
-    }
 
-    if (isAutoMode) {
-      setError("Cannot set heater power in AUTO mode");
-      return;
-    }
-
-    try {
-      setError("");
-      const command = sendHeaterPower(heaterPower);
-      await onSendCommand(command);
-    } catch (error) {
-      setError("Failed to set heater power");
-      console.error(error);
-    }
-  };
-
-  const handleSetPumpPower = async () => {
-    if (!isConnected) {
-      console.log("[DOCKER] Not connected to a device");
-      return;
-    }
-
-    if (isAutoMode) {
-      setError("Cannot set pump power in AUTO mode");
-      return;
-    }
-
-    try {
-      setError("");
-      const command = sendPumpPower(pumpPower);
-      await onSendCommand(command);
-    } catch (error) {
-      setError("Failed to set pump power");
-      console.error(error);
-    }
-  };
 
   return (
     <div className="container-docker">
@@ -518,7 +481,7 @@ function DockerButtonComponent({
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
+                
                 marginLeft: "8px",
               }}
             >
@@ -527,7 +490,7 @@ function DockerButtonComponent({
                 onClick={() => handleSetTemperature(1)}
                 disabled={!isConnected}
                 style={{
-                  fontSize: "14px",
+                  fontSize: "25px",
                   padding: "0px 4px",
                   minHeight: "18px",
                   fontWeight: "bold",
@@ -540,7 +503,7 @@ function DockerButtonComponent({
                 onClick={() => handleSetTemperature(-1)}
                 disabled={!isConnected}
                 style={{
-                  fontSize: "14px",
+                  fontSize: "25px",
                   padding: "0px 4px",
                   minHeight: "18px",
                   marginTop: "2px",
@@ -551,8 +514,69 @@ function DockerButtonComponent({
               </button>
             </div>
           </div>
+          <p className="dash-subtitles">AJUSTE DE TEMPERATURA</p>
+        </div>
+      </div>
+
+      <div className="dash-results-div">
+        <div className="temperature-button">
+          <img src={TemperaturaImg} alt="Imagem Temperatura" />
+        </div>
+        <div className="vacuo-info">
+          <div style={{ display: "flex", alignItems: "center" }}>
+            
+            <div className="quantifier-results" style={{ color: "#FF2424" }}>
+              
+              <span className="value-results">
+                 {currentTemperature !== undefined
+              ? `${currentTemperature.toFixed(1)} °C`
+              : "N/A"}
+              </span>
+              <span className="value-results">°C</span>
+            </div>
+            <button
+              onClick={handleRequestData}
+              disabled={!isConnected}
+              className="mode-button"
+              >
+              Refresh Data
+            </button>
+
+            <button
+          onClick={handleToggleMode}
+          disabled={!isConnected}
+          className={`mode-button ${isAutoMode ? "auto" : "manual"}`}
+        >
+          {isAutoMode ? "AUTO" : "MANUAL"}
+        </button>
+          </div>
           <p className="dash-subtitles">TEMPERATURA</p>
         </div>
+        
+        
+      </div>
+
+      <div className="dash-results-div">
+        <div className="vacDis-background">
+          <img src={CapsulaImg} alt="Imagem Temperatura" width="105" height="105" />
+        </div>
+        <div className="vacuo-info">
+          <div style={{ display: "flex", alignItems: "center" }}>
+            
+            <div className="quantifier-results" style={{ color: "#f1f2ff" }}>
+              
+              <span className="value-results" style={{ color: "#5D91ED" }}>
+                 {currentPressure !== undefined
+              ? `${currentPressure.toFixed(1)} hPa`
+              : "N/A"}
+              </span>
+              <span className="mesuare-results" style={{ color: "#5D91ED" }}>hPa</span>
+            </div>
+            
+          </div>
+          <p className="dash-subtitles" >VÁCUO/POTÊNCIA</p>
+        </div>
+        
       </div>
 
       <div className="dash-results-div">
@@ -572,7 +596,7 @@ function DockerButtonComponent({
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
+                
                 marginLeft: "8px",
               }}
             >
@@ -581,7 +605,7 @@ function DockerButtonComponent({
                 onClick={() => handleSetPressure(1)} 
                 disabled={!isConnected}
                 style={{
-                  fontSize: "14px",
+                  fontSize: "25px",
                   padding: "0px 4px",
                   minHeight: "18px",
                   fontWeight: "bold",
@@ -594,7 +618,7 @@ function DockerButtonComponent({
                 onClick={() => handleSetPressure(-1)} 
                 disabled={!isConnected}
                 style={{
-                  fontSize: "14px",
+                  fontSize: "25px",
                   padding: "0px 4px",
                   minHeight: "18px",
                   marginTop: "2px",
@@ -623,7 +647,7 @@ function DockerButtonComponent({
             <div
               style={{
                 display: "flex",
-                flexDirection: "column",
+                
                 marginLeft: "8px",
               }}
             >
@@ -632,7 +656,7 @@ function DockerButtonComponent({
                 onClick={() => handleTimerChange(300)}
                 disabled={!isConnected || isRunning}
                 style={{
-                  fontSize: "14px",
+                  fontSize: "25px",
                   padding: "0px 4px",
                   minHeight: "18px",
                   fontWeight: "bold",
@@ -645,7 +669,7 @@ function DockerButtonComponent({
                 onClick={() => handleTimerChange(-300)}
                 disabled={!isConnected || isRunning}
                 style={{
-                  fontSize: "14px",
+                  fontSize: "25px",
                   padding: "0px 4px",
                   minHeight: "18px",
                   marginTop: "2px",
@@ -658,52 +682,6 @@ function DockerButtonComponent({
           </div>
           
           <p className="dash-subtitles">TEMPO DE TREINO</p>
-        </div>
-      </div>
-
-        <div className="dash-results-div">
-          <div className="vacDis-background">
-            <img src={DistanciaImg} alt="Distância" className="vacuo-img" />
-          </div>
-          <div className="vacuo-info">
-            <div style={{ display: "flex", alignItems: "center" }}>
-              <div className="quantifier-results" style={{ color: "#00C9FF" }}>
-                <span className="value-results">{distance > 999 ? (distance / 1000).toFixed(1) : Math.round(distance)}</span>
-                <span className="value-results">{distance > 999 ? "km" : "m"}</span>
-              </div>
-            </div>
-            <p className="dash-subtitles">DISTÂNCIA PERCORRIDA</p>
-        </div>
- 
-      </div>
-
-      <div className="dash-results-div">
-        <div className="temperature-button">
-          <img
-            src={ColagenoImg}
-            alt="Colágeno"
-            className="vacuo-img"
-            width={78}
-            height={78}
-          />
-        </div>
-        <div className="vacuo-info">
-          <div className="quantifier-results">
-            <span>COLÁGENO/LUZ</span>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-            <button
-              className={
-                isColagenoOn ? "colageno-btn-on active" : "colageno-btn-off"
-              }
-              onClick={handleColagenoToggle}
-              disabled={!isConnected}
-              style={{ minWidth: 30, minHeight: 30 }}
-            />
-            <p className="vacuo-label">
-              {isColagenoOn ? "Ligado" : "Desligado"}
-            </p>
-          </div>
         </div>
       </div>
     </div>

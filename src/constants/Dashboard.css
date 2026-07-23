@@ -7,12 +7,10 @@
 /* Header Styles*/
 .App-Header {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
-  padding: 20px;
   color: #ffffff;
-  padding: 20px 10px;
-
+  padding: 5px;
   gap: 20px;
 }
 
@@ -26,6 +24,30 @@
   font-size: 13px;
   color: #ffffff;
   text-decoration: none;
+}
+
+.nbr-digital {
+  font-family: 'DS-DIGI';
+  font-weight: 540;
+  font-size: 17px;
+  line-height: 100%;
+  letter-spacing: 0px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.safety-warning{
+  z-index: 1000;
+  position: absolute;
+  width: 300px;
+  background: linear-gradient(
+    180deg,
+    rgba(55, 12, 148, 0.8) 0%,
+    rgba(11, 1, 33, 0.74) 165.57%
+  );
+  border-radius: 8px;
+  padding: 5px 10px;
+  text-align: center;
 }
 
 .btns-header-div {
@@ -90,8 +112,8 @@
   width: 95vw;
   margin: 0px 10px;
   display: grid;
-  grid-template-rows: 22% 26% 26% 26%;
-  grid-template-columns: 20% 20% 20% 20% 20%;
+  
+  grid-template-columns: repeat(3, 1fr);
   color: #ffffff;
   gap: 0px 10px;
 }
@@ -100,9 +122,9 @@
 
 .container-docker {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(3, 1fr);
   gap: 20px;
-  width: 100%;
+  width:80%;
 }
 
 .dash-results-container {
@@ -197,9 +219,19 @@
   align-items: center;
 }
 
+.neonDis-background {
+  background-color: #ebfa21;
+  border-radius: 50%;
+  width: 82px;
+  height: 82px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .colageno-btn-on {
-  width: 30px;
-  height: 30px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   border: none;
   background-color: #6ce841;
@@ -214,8 +246,8 @@
 }
 
 .colageno-btn-off {
-  width: 30px;
-  height: 30px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   border: none;
   background-color: #ea3255;
@@ -227,6 +259,59 @@
 .colageno-btn-off:hover {
   transform: scale(1.1);
   box-shadow: 0px 0px 12px 2px #ea3255;
+}
+
+.toggle-switch {
+  position: relative;
+  width: 100px;
+  height: 50px;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-switch label {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 999px;
+  background: #e24d4d;
+  cursor: pointer;
+  position: relative;
+  transition: background-color 0.2s ease;
+}
+
+.toggle-switch label::after {
+  content: "";
+  position: absolute;
+  
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch input:checked + label {
+  background: #6ce841;
+}
+
+.toggle-switch input:checked + label::after {
+  transform: translateX(55px);
+}
+
+.toggle-switch input:disabled + label {
+  background: #eb4c4c;
+  cursor: not-allowed;
+}
+
+.toggle-switch input:disabled + label::after {
+  background: #d41919;
 }
 
 /* Grid Man Running Styles*/
@@ -282,9 +367,9 @@
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  width: 212px;
-  height: 212px;
-  border-radius: 50%;
+  width: 450px;
+  height: 300px;
+  border-radius: 20px;
   border: 0.5px solid #c2aeff26;
   background: linear-gradient(
     159.78deg,
@@ -295,12 +380,15 @@
 
 .arrow-button {
   border-radius: 50%;
-  width: 45px;
-  height: 45px;
+  width: 80px;
+  height: 80px;
   background: linear-gradient(158.27deg, #370c94 -11.15%, #0b0121 48.08%);
   color: #ffffff;
   border: none;
   cursor: pointer;
+  margin-left: 10px;
+  margin-bottom: 10px;
+  font-size: 24px;
 }
 
 .div-circle-subresults {
@@ -338,7 +426,7 @@
 }
 
 .title-leds {
-  font-family: SF Pro;
+  font-family: 'SF Pro';
   font-weight: 540;
   font-size: 17px;
   line-height: 90%;
@@ -348,7 +436,7 @@
 }
 
 .text-leds {
-  font-family: SF Pro;
+  font-family: 'SF Pro';
   font-weight: 110;
   font-size: 23px;
   line-height: 100%;
@@ -381,28 +469,22 @@
 }
 
 .btn-start {
-  background: linear-gradient(
-    157.79deg,
-    rgba(0, 204, 255, 0.8) 40.18%,
-    rgba(0, 68, 255, 0.135) 95.6%
-  );
-  border-radius: 50%;
-  width: 80%;
-  height: 80%;
+  background-color: rgba(0, 255, 42, 0.8);
+  box-shadow: 0px 0px 8px 1px rgba(0, 255, 42, 0.8);
+  border-radius: 20px;
+  width:100%;
+  height:100%;
   display: flex;
   justify-content: center;
   align-items: center;
 }
 
 .btn-stop{
-  background: linear-gradient(
-    157.79deg,
-    rgba(255, 36, 36, 0.8) 40.18%,
-    rgba(255, 36, 36, 0.056) 95.6%
-  );
-  border-radius: 50%;
-  width: 80%;
-  height: 80%;
+  background-color: rgba(255, 36, 36, 0.8);
+  box-shadow: 0px 0px 8px 1px rgba(255, 36, 36, 0.8);
+  border-radius: 20px;
+  width:100%;
+  height:100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -441,9 +523,8 @@
 
 /* Grid 6 options styles*/
 .div-options-buttons {
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  padding: 20px;
+  padding: 20px 0px;
+  
   background: linear-gradient(
     180deg,
     rgba(55, 12, 148, 0.8) 0%,
@@ -454,12 +535,13 @@
 }
 
 .div-circle-options {
-  width: 160px;
-  height: 147px;
+  width: 80px;
+  height: 72px;
   justify-content: center;
   display: flex;
   align-items: flex-end;
   cursor: pointer;
+  
 }
 
 .btns-options {
@@ -469,17 +551,18 @@
 }
 
 .options-title {
-  font-weight: 760;
+  
   font-size: 13px;
   line-height: 90%;
   letter-spacing: 0px;
   text-align: center;
   vertical-align: middle;
   margin-top: 5px;
+  padding-bottom: 25px;
 }
 
 .dash-subtitles {
-  font-family: SF Pro;
+  font-family: 'SF Pro';
   font-weight: 540;
   font-size: 17px;
   line-height: 100%;
@@ -496,9 +579,7 @@
     grid-template-columns: 270px 300px 220px 230px 225px;
   }
 
-  .dash-subtitles {
-  }
-
+ 
   .value-results {
     font-size: 44px;
   }

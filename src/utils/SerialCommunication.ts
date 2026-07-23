@@ -160,38 +160,56 @@ export const requestPressure = (): Uint8Array => {
  * Parse response data
  */
 export const parseResponse = (data: Uint8Array) => {
+  // Debug: Log raw data for troubleshooting
+  console.log("[PARSE_RESPONSE] Attempting to parse:", {
+    length: data.length,
+    hex: Array.from(data).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '),
+    stxValid: data[0] === STX,
+    etxValid: data[data.length - 1] === ETX,
+  });
+
   if (data.length < 5 || data[0] !== STX || data[data.length - 1] !== ETX) {
+    console.log("[PARSE_RESPONSE] ❌ Data does not meet basic protocol requirements");
+    console.log(`[PARSE_RESPONSE]   - Length: ${data.length} (minimum 5)`);
+    console.log(`[PARSE_RESPONSE]   - STX: ${data[0]} (expected ${STX})`);
+    console.log(`[PARSE_RESPONSE]   - ETX: ${data[data.length - 1]} (expected ${ETX})`);
     return null;
   }
 
   const commandId = data[2];
+  console.log("[PARSE_RESPONSE] ✅ Protocol format valid. Command ID:", `0x${commandId.toString(16)}`);
 
   switch (commandId) {
     case 0x0b:
       if (data.length >= 6) {
         const temperatureValue = (data[3] << 8) | data[4];
+        console.log("[PARSE_RESPONSE] 🌡️  Temperature response parsed:", temperatureValue / 10);
         return { type: "temperature", value: temperatureValue / 10 };
       }
       break;
     case 0x0c:
       if (data.length >= 6) {
         const pressureValue = (data[3] << 8) | data[4];
+        console.log("[PARSE_RESPONSE] 🔘 Pressure response parsed:", pressureValue / 10);
         return { type: "pressure", value: pressureValue / 10 };
       }
       break;
     case 0x0d:
       if (data.length >= 6) {
         const speedValue = (data[3] << 8) | data[4];
+        console.log("[PARSE_RESPONSE] 🏃 Speed response parsed:", speedValue);
         return { type: "speed", value: speedValue };
       }
       break;
     case 0x0e:
       if (data.length >= 6) {
         const inclinationValue = (data[3] << 8) | data[4];
+        console.log("[PARSE_RESPONSE] ⛰️  Inclination response parsed:", inclinationValue);
         return { type: "inclination", value: inclinationValue };
       }
       break;
   }
 
+  console.log("[PARSE_RESPONSE] ❌ Unknown or incomplete response");
   return null;
 };

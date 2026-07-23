@@ -27,6 +27,11 @@ import SmallDivsComponent from "../components/dashbordComponents/SmallDivsCompon
 import SerialPortSelector from "../components/SerialPortSelector";
 import ConveyorComponent from "../components/dashbordComponents/ConveyorComponent";
 import AutoConnectionModal from "../components/AutoConnectionModal";
+import GridDockerSideButton from "../components/dashbordComponents/GridDockerSideButton";
+import LedsComponent from "../components/dashbordComponents/LedsComponent";
+
+import MoveLogo from "../assets/images/mvspace.png";
+import CalDistanceComponent from "../components/dashbordComponents/CalDistanceComponent";
 
 // Dados e funções do VirtualWalk
 const virtualWalkData = [
@@ -976,6 +981,10 @@ function Dashboard() {
   const [autoConnectionSuccess, setAutoConnectionSuccess] = useState(false);
   const [autoConnectionMessage, setAutoConnectionMessage] = useState("");
 
+  // Refs para evitar stale closures
+  const handleSerialDataRef = useRef<(data: string) => void | null>(null);
+  const sendCommandRef = useRef<(data: Uint8Array) => Promise<void> | null>(null);
+
   const handleDistanceUpdate = (newDistance: number) => {
     setDistance(newDistance);
   };
@@ -1329,6 +1338,11 @@ function Dashboard() {
     [connectionStatus.connected]
   );
 
+  // Sincroniza o ref com sendCommand
+  useEffect(() => {
+    sendCommandRef.current = sendCommand;
+  }, [sendCommand]);
+
   // Função para definir velocidade e enviar comando ao hardware
   const setSpeedWithCommand = useCallback(
     async (newSpeed: number) => {
@@ -1532,12 +1546,7 @@ function Dashboard() {
       // Ao receber dados da porta serial via IPC, eles vêm como string
       if (typeof data === "string") {
         console.log("[HARDWARE_LOG] 📥 Converting string to byte array...");
-        // Temos que converter a string para um array de bytes
-        const bytes: number[] = [];
-        for (let i = 0; i < data.length; i++) {
-          bytes.push(data.charCodeAt(i));
-        }
-        dataArray = new Uint8Array(bytes);
+        dataArray = new TextEncoder().encode(data);
         console.log(
           "[HARDWARE_LOG] 📥 Converted to bytes:",
           Array.from(dataArray)
@@ -1673,6 +1682,11 @@ function Dashboard() {
     }
   }, []);
 
+  // Sincroniza o ref com o handleSerialData para evitar stale closures
+  useEffect(() => {
+    handleSerialDataRef.current = handleSerialData;
+  }, [handleSerialData]);
+
   useEffect(() => {
     const timestamp = new Date().toISOString();
     console.log(`[HARDWARE_LOG] 🔗 [${timestamp}] CONNECTION STATUS CHANGED`);
@@ -1691,7 +1705,9 @@ function Dashboard() {
       const onDataReceived = (data: string) => {
         console.log("[HARDWARE_LOG] 🔗 📥 Data received callback triggered");
         console.log("[SERIAL_RECEIVED] Dados recebidos do dispositivo:", data);
-        handleSerialData(data);
+        if (handleSerialDataRef.current) {
+          handleSerialDataRef.current(data);
+        }
       };
 
       // Define o callback para erros
@@ -1733,7 +1749,7 @@ function Dashboard() {
         !!window.api
       );
     }
-  }, [connectionStatus.connected, handleSerialData]);
+  }, [connectionStatus.connected]);
 
   // Solicitar dados de temperatura e pressão periodicamente
   useEffect(() => {
@@ -2190,7 +2206,7 @@ function Dashboard() {
 
   return (
     <div className="container-dashboard">
-      <DashboardHeader onClose={() => setOpenModal(!openModal)} temperature={temperature} />
+      <DashboardHeader onClose={() => setOpenModal(!openModal)}  />
       <main className="container-dashboard-grid">
         <div className="grid-docker-component">
           <DockerButtonComponent
@@ -2206,10 +2222,11 @@ function Dashboard() {
             onSpeedChange={setSpeedWithCommand}
           />
         </div>
-        <div className="grid-man-running-component">
-          <ManRunningComponent speed={speed} />
-        </div>
-        <div className="grid-conveyor-component">
+        <div className="grid-central">
+          <div style={{justifyContent: 'center', display: 'flex', marginBottom: '10px'}}>
+            <img src={MoveLogo} alt="Move Logo" />
+          </div>
+          
           <ConveyorComponent
             isConnected={connectionStatus.connected}
             onSendCommand={sendCommand}
@@ -2219,21 +2236,42 @@ function Dashboard() {
             distance={distance}
             temperature={temperature ?? 0}
             pressure={pressure ?? 0}
-          />
-        </div>
-        <div className="grid-smallDiv-component">
-          <SmallDivsComponent
             running={speed > 0}
             onStart={() => setSpeedWithCommand(1)}
             onStop={() => setSpeedWithCommand(0)}
           />
         </div>
-        <div className="grid-comp-performance">
-          <PerformanceComponent />
+        
+        <div className="grid-right">
+          <div className="grid-side">
+            <GridDockerSideButton
+            isConnected={connectionStatus.connected}
+            onSendCommand={sendCommand}
+            speed={speed}
+            isRunning={speed > 0}
+            />
+            <OptionsDashComponent 
+              isConnected={connectionStatus.connected}
+              onSendCommand={sendCommand}
+              onVirtualWalkOpen={handleOpenVirtualWalk} />
+          </div>
+            <div>
+             <LedsComponent
+              isConnected={connectionStatus.connected}
+              onSendCommand={sendCommand}
+              /> 
+              <CalDistanceComponent
+                isConnected={connectionStatus.connected}
+                onSendCommand={sendCommand}
+                distance={distance}
+              />
+            </div>
+            
+
+          
         </div>
-        <div className="grid-options-component">
-          <OptionsDashComponent onVirtualWalkOpen={handleOpenVirtualWalk} />
-        </div>
+        
+        
       </main>
 
       {/* Modal de Conexão Automática */}

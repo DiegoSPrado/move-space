@@ -44,64 +44,7 @@ const SmallDivsComponent: React.FC<SmallDivsComponentProps> = ({ running, onStar
         position: "relative",
       }}
     >
-      <div className="div-circle-subresults">
-        <div className="img-frequencia">
-          <img
-            src={FrequenciaImg}
-            alt=""
-            style={{ zIndex: "0", display: "block" }}
-          />
-          <img
-            src={HeartBeat}
-            alt=""
-            style={{
-              zIndex: "1",
-              position: "absolute",
-              top: "20px",
-              left: "-10px",
-            }}
-          />
-        </div>
-        <div style={{ transform: "translateY(-22px)", width: "90%" }}>
-          <div>
-            <span className="value-results" style={{ color: "#00C9FF" }}>
-              0
-            </span>
-            <span> bpm</span>
-          </div>
-          <div>
-            <p className="title-subresults">FREQUÊNCIA CARDÍACA</p>
-          </div>
-        </div>
-      </div>
-      <div className="div-circle-subresults">
-        <img src={PaSistolicaImg} alt="" className="imgs-central-grid" />
-        <div style={{ transform: "translateY(-22px)", width: "90%" }}>
-          <div>
-            <span className="value-results" style={{ color: "#00C9FF" }}>
-              0
-            </span>
-            <span style={{ height: "33px", width: "33px" }}> mmHg</span>
-          </div>
-          <div>
-            <p className="title-subresults">PA SISTÓLICA</p>
-          </div>
-        </div>
-      </div>
-      <div className="div-circle-subresults">
-        <img src={PaDiastolicaImg} alt="" className="imgs-central-grid" />
-        <div style={{ transform: "translateY(-22px)" }}>
-          <div>
-            <span className="value-results" style={{ color: "#00C9FF" }}>
-              0
-            </span>
-            <span> mmHg</span>
-          </div>
-          <div>
-            <p className="title-subresults">PA DIASTÓLICA</p>
-          </div>
-        </div>
-      </div>
+      
       <div
         className="div-circle-subresults"
         style={{ cursor: countdown ? "not-allowed" : "pointer" }}
@@ -110,12 +53,12 @@ const SmallDivsComponent: React.FC<SmallDivsComponentProps> = ({ running, onStar
             handleActionWithCountdown(running ? onStop : onStart);
           }
         }}
-      >
+        >
         <div className={running ? "btn-stop" : "btn-start"}>
           <p className="dash-subtitles">{running ? "PARAR" : "INICIAR"}</p>
         </div>
-      </div>
-      {countdown !== null && (
+        </div>
+       {countdown !== null && (
         <div
           style={{
             position: "absolute",
@@ -132,8 +75,8 @@ const SmallDivsComponent: React.FC<SmallDivsComponentProps> = ({ running, onStar
         >
           <span style={{ color: "#fff", fontSize: 48, fontWeight: "bold" }}>{countdown}</span>
         </div>
-      )}
-    </div>
+        )}
+      </div>
   );
 };
 

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import SpotifyBtn from "../../assets/images/gridOptionsimages/SpotifyBtn.png";
 import VirtualCircle from "../../assets/images/gridOptionsimages/Caminhada.png";
@@ -7,15 +7,22 @@ import WhatsappBtn from "../..//assets/images/gridOptionsimages/Whatsapp.png";
 import CheckupBtn from "../../assets/images/gridOptionsimages/Checkup.png";
 import MonitoramentoBtn from "../../assets/images/gridOptionsimages/Monitoramento.png";
 import ModalCheckup from "./ModalCheckup";
+import LedsComponent from "./LedsComponent";
 
 interface OptionsDashComponentProps {
+  isConnected: boolean;
+  onSendCommand: (data: Uint8Array) => Promise<void>;
   onVirtualWalkOpen?: () => void;
 }
 
 function OptionsDashComponent({
+  isConnected,
+  onSendCommand,
   onVirtualWalkOpen,
 }: OptionsDashComponentProps) {
   const [openCheckupModal, setOpenCheckupModal] = useState(false);
+
+
 
   const openNetflix = () => {
     if (window.api && window.api.openInternalWindow) {
@@ -80,7 +87,7 @@ function OptionsDashComponent({
   };
 
   return (
-    <div className="div-options-buttons">
+    <div className="div-options-buttons" >
       <div className="btns-options" onClick={onVirtualWalkOpen}>
         <div className="div-circle-options">
           <img src={VirtualCircle} alt="Botão Caminhada" width={"100%"} />
@@ -104,26 +111,10 @@ function OptionsDashComponent({
         <p className="options-title">MONITORAMENTO SAÚDE</p>
       </div>
 
-      <div className="btns-options" onClick={openWhatsapp}>
-        <div className="div-circle-options">
-          <img src={WhatsappBtn} alt="Whatsapp button" width={"100%"} />
-        </div>
-        <p className="options-title">WHATSAPP</p>
-      </div>
+      
 
-      <div className="btns-options" onClick={openNetflix}>
-        <div className="div-circle-options">
-          <img src={NetflixBtn} alt="Netflix Button" width={"100%"} />
-        </div>
-        <p className="options-title">NETFLIX</p>
-      </div>
-
-      <div className="btns-options" onClick={openSpotify}>
-        <div className="div-circle-options">
-          <img src={SpotifyBtn} alt="spotify button" width={"100%"} />
-        </div>
-        <p className="options-title">SPOTIFY</p>
-      </div>
+      
+      
       {openCheckupModal && (
         <ModalCheckup onClose={() => setOpenCheckupModal(false)} />
       )}

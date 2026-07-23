@@ -16,6 +16,18 @@ function Control() {
   const [pressure, setPressure] = useState<number | undefined>(undefined);
   const [logs, setLogs] = useState<string[]>([]);
   const [error, setError] = useState<string>("");
+  const [openModal, setOpenModal] = useState(false)
+
+    useEffect(() => {
+    const handleCloseSerialModal = () => {
+      setOpenModal(false);
+    };
+
+    window.addEventListener("closeSerialModal", handleCloseSerialModal);
+    return () => {
+      window.removeEventListener("closeSerialModal", handleCloseSerialModal);
+    };
+  }, []);
 
   // Handle received data from serial port
   const handleSerialData = useCallback((data: string) => {
@@ -119,14 +131,19 @@ function Control() {
     <div className="App">
       <header className="App-header">
         <h1>DrMove Control System</h1>
+        <button onClick={() => setOpenModal(!openModal)}>Portas</button>
       </header>
       <Link to={"/"}>Dashboard</Link>
       <main className="App-main">
-        <div className="connection-panel">
-          <Link to={"/config"}>confi</Link>
+        {openModal && (
+        <div className="serial-modal-overlay-dashboard">
           <SerialPortSelector onConnectionStatusChange={setConnectionStatus} />
         </div>
-
+      )}
+      <div >
+        
+      </div>
+        
         <div
           className="control-panels"
           style={{ opacity: connectionStatus.connected ? 1 : 0.5 }}

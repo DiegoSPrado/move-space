@@ -21,6 +21,7 @@ function ManRunningComponent({ speed }: Props) {
         display: "flex",
         flexDirection: "column",
         overflow: "hidden",
+        
       }}
     >
       <p style={{ padding: "5px", margin: "0" }}>DESEMPENHO</p>
