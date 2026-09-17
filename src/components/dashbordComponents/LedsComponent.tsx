@@ -6,11 +6,13 @@ import { setLedColors } from "../../utils/CommandHelpers";
 interface LedsComponentProps {
   isConnected?: boolean;
   onSendCommand?: (data: Uint8Array) => Promise<void>;
+  isRunning?: boolean;
 }
 
 function LedsComponent({
   isConnected = false,
   onSendCommand,
+  isRunning = false,
 }: LedsComponentProps) {
   // Estado para cores dos LEDs externo/interno
   const [ledColors, setLedColorsState] = useState<LedColors>({
@@ -53,6 +55,12 @@ function LedsComponent({
       rgbToHex(ledColors.internal.r, ledColors.internal.g, ledColors.internal.b)
     );
   }, [ledColors]);
+
+  useEffect(() => {
+    if (isRunning && isConnected) {
+      sendLedColorsToHardware(ledColors.external, ledColors.internal);
+    }
+  }, [isRunning, isConnected]);
 
 
   // Função para enviar comandos de cor para o hardware (valores passados explicitamente)

@@ -13,12 +13,14 @@ interface OptionsDashComponentProps {
   isConnected: boolean;
   onSendCommand: (data: Uint8Array) => Promise<void>;
   onVirtualWalkOpen?: () => void;
+  horizontal?: boolean;
 }
 
 function OptionsDashComponent({
   isConnected,
   onSendCommand,
   onVirtualWalkOpen,
+  horizontal = false
 }: OptionsDashComponentProps) {
   const [openCheckupModal, setOpenCheckupModal] = useState(false);
 
@@ -87,7 +89,7 @@ function OptionsDashComponent({
   };
 
   return (
-    <div className="div-options-buttons" >
+    <div className={`div-options-buttons${horizontal ? " div-options-buttons--horizontal" : ""}`}>
       <div className="btns-options" onClick={onVirtualWalkOpen}>
         <div className="div-circle-options">
           <img src={VirtualCircle} alt="Botão Caminhada" width={"100%"} />
@@ -98,7 +100,7 @@ function OptionsDashComponent({
         <div className="div-circle-options">
           <img src={CheckupBtn} alt="Checkup Fisiológico" width={"100%"} />
         </div>
-        <p className="options-title">CHECKUP FISIOLÓGICO BIOTRIAGEM</p>
+        <p className="options-title">CHECKUP FISIOLOGICO BIOTRIAGEM</p>
       </div>
       <div className="btns-options" onClick={openBiotriagem}>
         <div className="div-circle-options">
@@ -108,7 +110,7 @@ function OptionsDashComponent({
             width={"100%"}
           />
         </div>
-        <p className="options-title">MONITORAMENTO SAÚDE</p>
+        <p className="options-title">MONITORAMENTO SAUDE</p>
       </div>
 
       

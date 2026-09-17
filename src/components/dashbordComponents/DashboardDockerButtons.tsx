@@ -17,8 +17,6 @@ import {
   setPumpPower as sendPumpPower,
   setConveyorSpeed
 } from "../../utils/CommandHelpers";
-import { styles } from "../../constants/modalStyle";
-import { setLampState } from "../../utils/SerialCommunication";
 
 declare global {
   interface Window {
@@ -68,9 +66,7 @@ function DockerButtonComponent({
   const lastTimeCalculatedRef = useRef(0);
   const lastSpeedRef = useRef(0);
   const hasStoppedRef = useRef(false);
-  const animationFrameIdRef = useRef<number>(0);
-  const lastDistanceUpdateTimeRef = useRef<number>(0);
-  const onDistanceUpdateRef = useRef(onDistanceUpdate);
+
   
  
   useEffect(() => {
@@ -101,72 +97,21 @@ function DockerButtonComponent({
   return () => clearInterval(interval);
 }, [isConnected, isRunning, timerSeconds, onSendCommand, onSpeedChange]);
 
-  useEffect(() => {
-    onDistanceUpdateRef.current = onDistanceUpdate;
-  }, [onDistanceUpdate]);
-
-  useEffect(() => {
-    const animate = (now: number) => {
-      if (!lastDistanceUpdateTimeRef.current) {
-        lastDistanceUpdateTimeRef.current = now;
-      }
-
-      const deltaTime = now - lastDistanceUpdateTimeRef.current;
-
-      if (deltaTime >= 1000) { // Atualiza a cada 1 segundo
-        lastDistanceUpdateTimeRef.current = now;
-        if (isRunning && isConnected && speed > 0) {
-            const speedFromProps = speed ?? 0;
-            // km/h para m/s e multiplica pelo tempo (1s)
-            const distanceIncrementInMeters = (speedFromProps / 3.6) * (deltaTime / 1000);
-
-            setDistance((prevDistance) => {
-                const newDistance = prevDistance + distanceIncrementInMeters;
-                onDistanceUpdateRef.current?.(newDistance);
-                return newDistance;
-            });
-        }
-      }
-      animationFrameIdRef.current = requestAnimationFrame(animate);
-    };
-
-    animationFrameIdRef.current = requestAnimationFrame(animate);
-
-    return () => cancelAnimationFrame(animationFrameIdRef.current);
-  }, [isRunning, isConnected, speed]);
 
   useEffect(() => {
     if (!isConnected) {
-      setTemperatureSetpoint(25);
-      setPressureSetpoint(1013.2);
+  
       setDistance(0);
       setLastSpeed(0);
       setLastTimeCalculated(0);
     }
   }, [isConnected]);
 
-  const handleRequestData = React.useCallback(async () => {
-    if (!isConnected) {
-      setError("Not connected to a device");
-      return;
-    }
-
-    try {
-      setError("");
-
-      await onSendCommand(requestTemperature());
-      await onSendCommand(requestPressure());
-    } catch (error) {
-      setError("Failed to request data");
-      console.error(error);
-    }
-  }, [isConnected, onSendCommand]);
+  
 
   useEffect(() => {
     if (!isConnected) {
       setIsColagenoOn(false);
-      setTemperatureSetpoint(25);
-      setPressureSetpoint(1013.2);
       setIsAutoMode(false);
       setHeaterPower(0);
       setPumpPower(0);
@@ -175,25 +120,14 @@ function DockerButtonComponent({
       lastSpeedRef.current = 0;
     } else {
       // When connected, request current temperature and pressure data
-      handleRequestData();
+      
       
       // When connected, explicitly set the device to manual mode
-      const initializeManualMode = async () => {
-        try {
-          console.log("[INIT] Setting device operation mode to MANUAL");
-          // Set operation mode to MANUAL (false = manual, true = auto)
-          const manualModeCommand = setOperationMode(true);
-          await onSendCommand(manualModeCommand);
-          console.log("[INIT] Successfully set device to MANUAL mode");
-        } catch (error) {
-          console.error("[INIT] Failed to set device to MANUAL mode:", error);
-          setError("Failed to initialize device mode");
-        }
-      };
+      
 
-      initializeManualMode();
+      
     }
-  }, [isConnected, handleRequestData, onSendCommand]);
+  }, [isConnected, onSendCommand]);
 
   useEffect(() => {
     if (!isConnected) {
@@ -201,12 +135,8 @@ function DockerButtonComponent({
       return;
     }
 
-    if (lastSpeedRef.current === 0 && speed > 0) {
-      handleRequestData();
-    }
-
     lastSpeedRef.current = speed;
-  }, [isConnected, speed, handleRequestData]);
+  }, [isConnected, speed,]);
 
   useEffect(() => {
    
@@ -216,6 +146,15 @@ function DockerButtonComponent({
     setIsRunning(false);
   }
 }, [isConnected, speed]);
+
+  useEffect(() => {
+  if (!isRunning && speed === 0 && temperatureSetpoint > 0) {
+    setTemperatureSetpoint(0);
+    setHeaterPower(0);
+    setPressureSetpoint(0);
+    setPumpPower(0);
+  }
+}, [isRunning, speed]);
 
 
   const handleTimerChange = (delta: number) => {
@@ -229,7 +168,13 @@ function DockerButtonComponent({
   });
 };
 
+useEffect(() => {
+    console.log("Temperatura atual:", currentTemperature);
+}, [currentTemperature]);
 
+useEffect(() => {
+    console.log("Pressão atual:", currentPressure);
+}, [currentPressure]);
 
   function formatTime(seconds: number) {
     
@@ -352,19 +297,19 @@ function DockerButtonComponent({
 
     if (pressureSetpoint === 0 && change > 0) {
       try {
-        setPressureSetpoint(30);
+        setPressureSetpoint(5);
         setPumpPower(55);
         setError("");
 
-        const pressureCommand = sendPressure(30);
+        const pressureCommand = sendPressure(5);
         await onSendCommand(pressureCommand);
 
-        const powerCommand = sendPumpPower(55);
+        const powerCommand = sendPumpPower(5);
         await onSendCommand(powerCommand);
 
         // Notificar o Dashboard sobre a mudança de pressão
         if (onPressureChange) {
-          onPressureChange(30);
+          onPressureChange(5);
         }
 
         return;
@@ -402,7 +347,7 @@ function DockerButtonComponent({
       }
     }
 
-    let newPressure = Math.min(100, Math.max(0, pressureSetpoint + increment));
+    let newPressure = Math.min(80, Math.max(0, pressureSetpoint + increment));
     newPressure = Math.round(newPressure / 5) * 5;
 
     if (newPressure < 5 && newPressure > 0) {
@@ -414,11 +359,11 @@ function DockerButtonComponent({
       setError("");
 
       if (newPressure > 0) {
-        const basePressure = 30;
-        const basePower = 55;
+        const basePressure = 5;
+        const basePower = 5;
         const pressureDifference = newPressure - basePressure;
         const powerIncrement = Math.floor(pressureDifference / 5) * 5;
-        const calculatedPower = Math.min(100, basePower + powerIncrement);
+        const calculatedPower = Math.min(80, basePower + powerIncrement);
 
         setPumpPower(calculatedPower);
 
@@ -529,26 +474,14 @@ function DockerButtonComponent({
               
               <span className="value-results">
                  {currentTemperature !== undefined
-              ? `${currentTemperature.toFixed(1)} °C`
+              ? `${currentTemperature.toFixed(1)}`
               : "N/A"}
               </span>
               <span className="value-results">°C</span>
             </div>
-            <button
-              onClick={handleRequestData}
-              disabled={!isConnected}
-              className="mode-button"
-              >
-              Refresh Data
-            </button>
+            
 
-            <button
-          onClick={handleToggleMode}
-          disabled={!isConnected}
-          className={`mode-button ${isAutoMode ? "auto" : "manual"}`}
-        >
-          {isAutoMode ? "AUTO" : "MANUAL"}
-        </button>
+            
           </div>
           <p className="dash-subtitles">TEMPERATURA</p>
         </div>
@@ -567,7 +500,7 @@ function DockerButtonComponent({
               
               <span className="value-results" style={{ color: "#5D91ED" }}>
                  {currentPressure !== undefined
-              ? `${currentPressure.toFixed(1)} hPa`
+              ? `${currentPressure.toFixed(1)}`
               : "N/A"}
               </span>
               <span className="mesuare-results" style={{ color: "#5D91ED" }}>hPa</span>

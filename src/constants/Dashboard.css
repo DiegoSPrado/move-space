@@ -534,6 +534,15 @@
   border-radius: 12px;
 }
 
+.div-options-buttons--horizontal {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-around;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
 .div-circle-options {
   width: 80px;
   height: 72px;
@@ -542,6 +551,15 @@
   align-items: flex-end;
   cursor: pointer;
   
+}
+
+.div-options-buttons--horizontal .div-circle-options {
+  width: 120px;
+  height: 108px;
+}
+
+.div-options-buttons--horizontal .options-title {
+  font-size: 15px;
 }
 
 .btns-options {

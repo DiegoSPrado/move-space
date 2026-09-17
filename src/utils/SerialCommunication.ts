@@ -12,8 +12,12 @@ export const createCommandMessage = (
   command: CommandID,
   values: number[]
 ): Uint8Array => {
+  console.log("[CREATE_COMMAND] Creating command:", { command, values });
   const message = [STX, MASTER_ID, command, ...values, ETX];
-  return new Uint8Array(message);
+  console.log("[CREATE_COMMAND] Message bytes:", message);
+  const result = new Uint8Array(message);
+  console.log("[CREATE_COMMAND] Returning Uint8Array:", result);
+  return result;
 };
 
 /**
@@ -146,24 +150,76 @@ export const activateAromatizer = (): Uint8Array => {
  * Request current temperature
  */
 export const requestTemperature = (): Uint8Array => {
-  return createCommandMessage(CommandID.SOLICITAR_TEMPERATURA, []);
+  const cmd = createCommandMessage(CommandID.SOLICITAR_TEMPERATURA, []);
+  console.log("[REQUEST_TEMP] Called requestTemperature(), returning:", cmd);
+  return cmd;
 };
 
 /**
  * Request current pressure
  */
 export const requestPressure = (): Uint8Array => {
-  return createCommandMessage(CommandID.SOLICITAR_PRESSAO, []);
+  const cmd = createCommandMessage(CommandID.SOLICITAR_PRESSAO, []);
+  console.log("[REQUEST_PRESSURE] Called requestPressure(), returning:", cmd);
+  return cmd;
 };
 
 /**
  * Parse response data
  */
+export const normalizeSerialData = (
+  data: string | number[] | Uint8Array
+): Uint8Array => {
+  if (data instanceof Uint8Array) {
+    return data;
+  }
+
+  if (Array.isArray(data) && data.every((byte) => typeof byte === "number")) {
+    return new Uint8Array(data);
+  }
+
+  if (typeof data === "string") {
+    const trimmed = data.trim();
+
+    // JSON encoded array of bytes
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        if (Array.isArray(parsed) && parsed.every((byte) => typeof byte === "number")) {
+          return new Uint8Array(parsed);
+        }
+      } catch {
+        // Fallthrough to raw string parsing
+      }
+    }
+
+    // Hex string e.g. "02 08 0b 00 64 03"
+    const hexParts = trimmed.split(/\s+/);
+    if (
+      hexParts.length > 1 &&
+      hexParts.every((part) => /^[0-9a-fA-F]{2}$/.test(part))
+    ) {
+      return new Uint8Array(hexParts.map((part) => parseInt(part, 16)));
+    }
+
+    // Try to interpret as raw binary string bytes
+    const rawBytes = new Uint8Array(trimmed.length);
+    for (let i = 0; i < trimmed.length; i += 1) {
+      rawBytes[i] = trimmed.charCodeAt(i);
+    }
+    return rawBytes;
+  }
+
+  // Fallback: try to coerce to Uint8Array
+  return new Uint8Array(Array.from((data as unknown) as Uint8Array));
+};
+
 export const parseResponse = (data: Uint8Array) => {
   // Debug: Log raw data for troubleshooting
+  console.log("[PARSE] Dados recebidos:", Array.from(data));
   console.log("[PARSE_RESPONSE] Attempting to parse:", {
     length: data.length,
-    hex: Array.from(data).map(b => `0x${b.toString(16).padStart(2, '0')}`).join(' '),
+    hex: Array.from(data).map((b) => `0x${b.toString(16).padStart(2, '0')}`).join(' '),
     stxValid: data[0] === STX,
     etxValid: data[data.length - 1] === ETX,
   });

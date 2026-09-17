@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import SerialPortSelector from "../components/SerialPortSelector";
 import { ConnectionStatus } from "../types";
 import { data, Link } from "react-router-dom";
-import { parseResponse } from "../utils/SerialCommunication";
+import { normalizeSerialData, parseResponse } from "../utils/SerialCommunication";
 
 function Configuration() {
   const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>({
@@ -13,15 +13,8 @@ function Configuration() {
   const [error, setError] = useState<string>("");
   const [temperature, setTemperature] = useState<number | undefined>(undefined);
 
-  const handleSerialData = useCallback((data: string) => {
-    // For backward compatibility, if data is a string but we expect Uint8Array
-    let dataArray: Uint8Array;
-    if (typeof data === "string") {
-      // Convert string to Uint8Array
-      dataArray = new TextEncoder().encode(data);
-    } else {
-      dataArray = data as unknown as Uint8Array;
-    }
+  const handleSerialData = useCallback((data: string | number[] | Uint8Array) => {
+    const dataArray = normalizeSerialData(data);
 
     const hexString = Array.from(dataArray)
       .map((byte) => byte.toString(16).padStart(2, "0"))

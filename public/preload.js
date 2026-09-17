@@ -81,6 +81,7 @@ try {
       console.log("Registrando listener para serial-data");
       ipcRenderer.on("serial-data", (_, data) => {
         console.log("Preload: Dados recebidos do main process:", data);
+
         if (typeof data === "string") {
           console.log(
             "Preload: Dados recebidos como string, comprimento:",
@@ -93,7 +94,14 @@ try {
             }
             console.log("Preload: Primeiros bytes:", bytes.join(" "));
           }
+        } else if (Array.isArray(data)) {
+          console.log("Preload: Dados recebidos como array de bytes, comprimento:", data.length);
+          if (data.length > 0) {
+            const bytes = data.slice(0, 20).map((b) => b.toString(16).padStart(2, "0"));
+            console.log("Preload: Primeiros bytes:", bytes.join(" "));
+          }
         }
+
         callback(data);
       });
     },

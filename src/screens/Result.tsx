@@ -106,7 +106,7 @@ function Result() {
       </Link>
       <main className="clip-rounded">
         <div className="div-title-result">
-          <h1 className="result-title">Parabéns pelo exercício</h1>
+          <h1 className="result-title">Parabens pelo exercicio</h1>
         </div>
         <div style={{ display: "flex ", justifyContent: "center" }}>
           <ResultsLeftDivComponent
@@ -138,6 +138,7 @@ function Result() {
         <OptionsDashComponent 
           isConnected={false}
           onSendCommand={() => Promise.resolve()}
+          horizontal
         />
       </div>
     </div>

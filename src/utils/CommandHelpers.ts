@@ -96,4 +96,5 @@ export const requestPressure = (): Uint8Array => {
 };
 
 // Função para analisar resposta
+export const normalizeSerialData = SerialProtocol.normalizeSerialData;
 export const parseResponse = SerialProtocol.parseResponse;

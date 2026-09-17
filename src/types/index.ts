@@ -29,7 +29,7 @@ declare global {
           sendSerialCommand: (
             command: string | Uint8Array
           ) => Promise<{ success: boolean; message: string }>;
-          onSerialData: (callback: (data: string) => void) => void;
+          onSerialData: (callback: (data: string | number[] | Uint8Array) => void) => void;
           onSerialError: (callback: (error: string) => void) => void;
           removeSerialListeners: () => void;
           openExternal: (

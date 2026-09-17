@@ -13,6 +13,10 @@ import {
   setConveyorInclination as sendConveyorInclination,
 } from "../../utils/CommandHelpers";
 
+interface UserData {
+  weight: number;
+  sex: "male" | "female";
+}
 
 interface ConveyorControlProps {
   isConnected: boolean;
@@ -27,7 +31,78 @@ interface ConveyorControlProps {
   onStart: () => void;
   onStop: () => void;
   onDistanceUpdate?: (distance: number) => void;
-}
+  onUserDataSubmit?: (data: UserData) => void;
+  onInclinationChange?: (inclination: number) => void;
+};
+
+const NumericKeypad: React.FC<{
+  value: string;
+  onChange: (value: string) => void;
+}> = ({ value, onChange }) => {
+  const handleDigit = (digit: string) => {
+    // Evita múltiplos pontos decimais e limita tamanho
+    if (digit === "." && value.includes(".")) return;
+    if (value.length >= 6) return;
+    onChange(value + digit);
+  };
+
+  const handleBackspace = () => {
+    onChange(value.slice(0, -1));
+  };
+
+  const handleClear = () => {
+    onChange("");
+  };
+
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "⌫"];
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: "10px",
+        marginTop: "10px",
+      }}
+    >
+      {keys.map((key) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => (key === "⌫" ? handleBackspace() : handleDigit(key))}
+          style={{
+            padding: "18px 0",
+            fontSize: "22px",
+            fontWeight: "bold",
+            borderRadius: "10px",
+            border: "none",
+            background: "rgba(255,255,255,0.1)",
+            color: "white",
+            cursor: "pointer",
+          }}
+        >
+          {key}
+        </button>
+      ))}
+      <button
+        type="button"
+        onClick={handleClear}
+        style={{
+          gridColumn: "1 / span 3",
+          padding: "14px 0",
+          fontSize: "16px",
+          borderRadius: "10px",
+          border: "none",
+          background: "rgba(255,80,80,0.3)",
+          color: "white",
+          cursor: "pointer",
+        }}
+      >
+        LIMPAR
+      </button>
+    </div>
+  );
+};
 
 const ConveyorComp: React.FC<ConveyorControlProps> = ({
   isConnected,
@@ -39,6 +114,8 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
   onStop,
   onDistanceUpdate,
   distance: traveledDistance,
+  onUserDataSubmit,
+  onInclinationChange,
 }) => {
   const navigate = useNavigate();
   const [inclination, setInclination] = useState<number>(0);
@@ -48,10 +125,13 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
   const [countdown, setCountdown] = useState<number | null>(null);
   const [pendingAction, setPendingAction] = useState<null | (() => void)>(null);
   const [error, setError] = useState<string>("");
-  const [caloriesBurned, setCaloriesBurned] = useState(0);
   const onDistanceUpdateRef = useRef(onDistanceUpdate);
+  const [showUserDataModal, setShowUserDataModal] = useState(false);
+  const [weight, setWeight] = useState("");
+  const [sex, setSex] = useState<"male" | "female" | "">("");
+  const [userDataError, setUserDataError] = useState("");
   const distanceRef = useRef(traveledDistance);
-  const CALORIES_PER_METER = 0.64;
+
 
   useEffect(() => {
     if (!isConnected) {
@@ -70,28 +150,7 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
     distanceRef.current = traveledDistance;
   }, [traveledDistance]);
 
-  useEffect(() => {
-    if (!isConnected) {
-      setCaloriesBurned(0);
-      return;
-    }
-
-    const updateCalories = () => {
-      setCaloriesBurned(distanceRef.current * CALORIES_PER_METER);
-    };
-
-    updateCalories();
-
-    const intervalId = window.setInterval(updateCalories, 10000);
-
-    return () => {
-      window.clearInterval(intervalId);
-    };
-  }, [isConnected]);
    
-    const calculateDistanceIncrement = (deltaTimeMs: number, speedKmh: number) => {
-      return (speedKmh / 3.6) * (deltaTimeMs / 1000);
-    };
 
   const handleSetSpeed = async (change: number) => {
     if (!isConnected) {
@@ -110,37 +169,33 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
     }
   };
 
+  const handleConfirmUserData = () => {
+    const parsedWeight = Number(weight);
 
-
-  const handleStopConveyor = async () => {
-    if (!isConnected) {
-      console.log("[CONVEYOR_COMP] Not connected to a device");
+    if (!parsedWeight || parsedWeight <= 0 || parsedWeight > 300) {
+      setUserDataError("Informe um peso válido.");
       return;
     }
-    if (speed === 0) {
+
+    if (!sex) {
+      setUserDataError("Selecione o sexo.");
       return;
     }
-    try {
-      if (onSpeedChange) onSpeedChange(0);
-      const command = sendConveyorSpeed(0);
-      await onSendCommand(command);
-      setSpeedError("");
 
-      // Just store exercise data, let Dashboard handle navigation and shutdown
-      const exerciseData = {
-        duration: 300,
-        distance: 500,
-        temperature: 35,
-        pressure: 50,
-        maxSpeed: speed,
-      };
+    // Envia os dados para o Dashboard
+    onUserDataSubmit?.({
+    weight: parsedWeight,
+    sex,
+  });
 
-      sessionStorage.setItem("exerciseData", JSON.stringify(exerciseData));
-    } catch (error) {
-      setSpeedError("Failed to stop conveyor");
-      console.error(error);
-    }
+    // Fecha o modal
+    setShowUserDataModal(false);
+    setUserDataError("");
+
+    // Agora sim começa a contagem
+    handleStartWithCountdown(onStart);
   };
+
 
   const handleSetInclination = async (change: number) => {
     if (!isConnected) {
@@ -157,8 +212,10 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
 
     try {
       setInclination(newInclination);
+      onInclinationChange?.(newInclination);
       const command = sendConveyorInclination(newInclination);
       await onSendCommand(command);
+      
       setInclinationError("");
     } catch (error) {
       setInclinationError("Failed to send inclination command");
@@ -181,6 +238,8 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
     }, 1000);
   };
 
+
+
   return (
     <div style={{ width: "100%", marginTop: '80px' }}>
       <div
@@ -196,7 +255,7 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
                   if (running) {
                     onStop();
                   } else {
-                    handleStartWithCountdown(onStart);
+                    setShowUserDataModal(true);
                   }
                 }
               }}
@@ -209,6 +268,146 @@ const ConveyorComp: React.FC<ConveyorControlProps> = ({
           </div>
           </div>
           
+            {showUserDataModal && (
+  <div
+    style={{
+      position: "fixed",
+      inset: 0,
+      backgroundColor: "rgba(0, 0, 0, 0.75)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 9999,
+    }}
+  >
+    <div
+      style={{
+        background: "#1a1a2e",
+        borderRadius: "20px",
+        padding: "30px",
+        width: "400px",
+        maxWidth: "90%",
+      }}
+    >
+      <h2 style={{ color: "white", marginBottom: "25px" }}>
+        Dados do cliente
+      </h2>
+
+      <label style={{ color: "white" }}>
+        Peso (kg)
+      </label>
+
+      <div
+        style={{
+          width: "100%",
+          padding: "12px",
+          marginTop: "8px",
+          marginBottom: "12px",
+          borderRadius: "8px",
+          background: "white",
+          fontSize: "22px",
+          fontWeight: "bold",
+          textAlign: "center",
+          minHeight: "28px",
+          color: "black",
+        }}
+      >
+        {weight || "0"}
+      </div>
+
+      <NumericKeypad value={weight} onChange={setWeight} />
+
+      <label style={{ color: "white", marginTop: "20px", display: "block" }}>
+        Sexo
+      </label>
+
+      <div style={{ display: "flex", gap: "10px", marginTop: "8px", marginBottom: "20px" }}>
+        <button
+          type="button"
+          onClick={() => setSex("male")}
+          style={{
+            flex: 1,
+            padding: "14px 0",
+            borderRadius: "8px",
+            border: sex === "male" ? "2px solid #00C9FF" : "2px solid transparent",
+            background: sex === "male" ? "rgba(0,201,255,0.2)" : "rgba(255,255,255,0.1)",
+            color: "white",
+            fontSize: "16px",
+            cursor: "pointer",
+          }}
+        >
+          MASCULINO
+        </button>
+        <button
+          type="button"
+          onClick={() => setSex("female")}
+          style={{
+            flex: 1,
+            padding: "14px 0",
+            borderRadius: "8px",
+            border: sex === "female" ? "2px solid #00C9FF" : "2px solid transparent",
+            background: sex === "female" ? "rgba(0,201,255,0.2)" : "rgba(255,255,255,0.1)",
+            color: "white",
+            fontSize: "16px",
+            cursor: "pointer",
+          }}
+        >
+          FEMININO
+        </button>
+      </div>
+
+      {userDataError && (
+        <p style={{ color: "#ff5555" }}>
+          {userDataError}
+        </p>
+      )}
+
+      <div
+        style={{
+          display: "flex",
+          gap: "10px",
+          justifyContent: "flex-end",
+        }}
+      >
+        <button
+          onClick={() => {
+            setShowUserDataModal(false);
+            setUserDataError("");
+          }}
+          style={{
+            flex: 1,
+            padding: "14px 0",
+            borderRadius: "8px",
+            border: "2px solid transparent",
+            background:  "rgba(43, 72, 231, 0.16)",
+            color: "white",
+            fontSize: "16px",
+            cursor: "pointer",
+          }}
+        >
+          CANCELAR
+        </button>
+
+        <button
+          onClick={handleConfirmUserData}
+          style={{
+            flex: 1,
+            padding: "14px 0",
+            borderRadius: "8px",
+            border: "2px solid transparent",
+            background:  "rgba(43, 72, 231, 0.16)",
+            color: "white",
+            fontSize: "16px",
+            cursor: "pointer",
+          }}
+        >
+          CONTINUAR
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
           <div style={{ display: "flex", justifyContent: "center", marginTop: "10px",gap: "10px" }}>
 
             <div className="div-circle-vel">

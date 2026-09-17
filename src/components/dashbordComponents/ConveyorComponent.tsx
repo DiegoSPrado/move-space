@@ -10,6 +10,11 @@ import {
 import LedsComponent from "./LedsComponent";
 import ConveyorComp from "./ConveyorComp";
 
+interface UserData {
+  weight: number;
+  sex: "male" | "female";
+}
+
 interface ConveyorControlProps {
   isConnected: boolean;
   onSendCommand: (data: Uint8Array) => Promise<void>;
@@ -22,6 +27,9 @@ interface ConveyorControlProps {
   running: boolean;
   onStart: () => void;
   onStop: () => void;
+
+  onUserDataSubmit?: (data: UserData) => void;
+  onInclinationChange?: (inclination: number) => void;
 }
 
 const ConveyorComponent: React.FC<ConveyorControlProps> = ({
@@ -35,7 +43,9 @@ const ConveyorComponent: React.FC<ConveyorControlProps> = ({
   pressure,
   running,
   onStart,
-  onStop
+  onStop,
+  onUserDataSubmit,
+  onInclinationChange,
 }) => {
   const navigate = useNavigate();
   const [inclination, setInclination] = useState<number>(0);
@@ -115,6 +125,8 @@ const ConveyorComponent: React.FC<ConveyorControlProps> = ({
     
   };
 
+
+
   return (
     <div>
       <ConveyorComp
@@ -129,7 +141,9 @@ const ConveyorComponent: React.FC<ConveyorControlProps> = ({
         running={speed > 0}
         onStart={onStart}
         onStop={onStop}
-        />
+        onUserDataSubmit={onUserDataSubmit}
+        onInclinationChange={onInclinationChange}
+      />
     </div>
   );
 };

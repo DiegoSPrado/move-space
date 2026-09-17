@@ -5,7 +5,7 @@ import ConveyorControl from "../components/ConveyorControl";
 import EnvironmentControl from "../components/EnvironmentControl";
 import PeripheralControl from "../components/PeripheralControl";
 import { ConnectionStatus, SerialPortInfo } from "../types";
-import { parseResponse } from "../utils/CommandHelpers";
+import { normalizeSerialData, parseResponse } from "../utils/CommandHelpers";
 import { Link } from "react-router-dom";
 
 function Control() {
@@ -30,15 +30,8 @@ function Control() {
   }, []);
 
   // Handle received data from serial port
-  const handleSerialData = useCallback((data: string) => {
-    // For backward compatibility, if data is a string but we expect Uint8Array
-    let dataArray: Uint8Array;
-    if (typeof data === "string") {
-      // Convert string to Uint8Array
-      dataArray = new TextEncoder().encode(data);
-    } else {
-      dataArray = data as unknown as Uint8Array;
-    }
+  const handleSerialData = useCallback((data: string | number[] | Uint8Array) => {
+    const dataArray = normalizeSerialData(data);
 
     // Add raw data to logs
     const hexString = Array.from(dataArray)

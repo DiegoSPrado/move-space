@@ -277,7 +277,7 @@ const EMBEDDED_HTML = `
 `;
 
 let reactServerStarted = false;
-
+let mainWindow;
 let server;
 let serverPort;
 
@@ -304,7 +304,7 @@ function startReactServer() {
 // Criar a janela principal
 function createWindow() {
   // Criar janela
-  const mainWindow = new BrowserWindow({
+   mainWindow = new BrowserWindow({
     width: 1024,
     height: 768,
     webPreferences: {
@@ -969,8 +969,9 @@ ipcMain.handle("open-serial-port", async (event, options) => {
 
     // Configurar a nova conexão
     const port = new SerialPort({
+      
       path: options.path,
-      baudRate: options.baudRate || 9600,
+      baudRate: options.baudRate || 115200,
       dataBits: options.dataBits || 8,
       stopBits: options.stopBits || 1,
       parity: options.parity || "none",
@@ -987,7 +988,7 @@ ipcMain.handle("open-serial-port", async (event, options) => {
         }
 
         console.log("Porta serial aberta com sucesso:", options.path);
-
+        console.log("BaudRate recebido:", options.baudRate);
         // Configurar manipuladores de eventos
         port.on("error", (err) => {
           console.error("Erro na porta serial:", err.message);
@@ -997,32 +998,74 @@ ipcMain.handle("open-serial-port", async (event, options) => {
           }
         });
 
-        port.on("data", (data) => {
-          console.log("Dados recebidos:", data.toString());
+        // Um evento de dados da serial pode conter uma fração de um pacote ou
+        // vários pacotes. Mantemos os bytes até encontrar STX (0x02) e ETX (0x03).
+        let rxBuffer = [];
+        // Temperature, pressure, speed and inclination responses are always:
+        // [STX][MASTER][RESPONSE][VALUE_H][VALUE_L][ETX]. The value itself can
+        // contain 0x03, so it must not be used as an early packet delimiter.
+        const fixedLengthResponseIds = new Set([0x0b, 0x0c, 0x0d, 0x0e]);
+
+        port.on("data", (chunk) => {
+          
           console.log(
-            "Dados recebidos (hex):",
-            Array.from(data)
-              .map((b) => b.toString(16).padStart(2, "0"))
-              .join(" ")
+          "RAW:",
+          Array.from(chunk)
+          .map(b => b.toString(16).padStart(2,"0"))
+          .join(" ")
           );
 
-          // Enviar dados recebidos para o renderer
-          if (mainWindow && !mainWindow.isDestroyed()) {
-            console.log("Enviando dados para renderer, bytes:", data.length);
+          rxBuffer.push(...chunk);
 
-            // Mandar como string normal
-            mainWindow.webContents.send("serial-data", data.toString());
+          while (true) {
+            const stx = rxBuffer.indexOf(0x02);
 
-            // Se não funcionar, teste estas alternativas comentadas:
-            /*
-            // Alternativa 1: Enviar como array de bytes
-            // mainWindow.webContents.send("serial-data", JSON.stringify(Array.from(data)));
-            
-            // Alternativa 2: Enviar como buffer binário
-            // mainWindow.webContents.send("serial-data", data);
-            */
+            if (stx < 0) {
+              rxBuffer = [];
+              break;
+            }
+
+            // Descarta ruído que tenha chegado antes do início de um pacote.
+            if (stx > 0) {
+              rxBuffer = rxBuffer.slice(stx);
+            }
+
+            if (rxBuffer.length < 3) {
+              break;
+            }
+
+            let packet;
+            if (fixedLengthResponseIds.has(rxBuffer[2])) {
+              if (rxBuffer.length < 6) {
+                break;
+              }
+
+              if (rxBuffer[5] !== 0x03) {
+                console.warn("Invalid fixed-length serial packet; discarding STX:", rxBuffer.slice(0, 6));
+                rxBuffer = rxBuffer.slice(1);
+                continue;
+              }
+
+              packet = rxBuffer.slice(0, 6);
+              rxBuffer = rxBuffer.slice(6);
+            } else {
+              const etx = rxBuffer.indexOf(0x03, 1);
+              if (etx < 0) {
+                break;
+              }
+              packet = rxBuffer.slice(0, etx + 1);
+              rxBuffer = rxBuffer.slice(etx + 1);
+            }
+
+            console.log("PACOTE:", packet);
+
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send("serial-data", packet);
+            }
           }
         });
+
+        
 
         // Armazenar a conexão global
         global.serialConnection = port;
@@ -1034,6 +1077,8 @@ ipcMain.handle("open-serial-port", async (event, options) => {
     return { success: false, message: error.message };
   }
 });
+
+
 
 // Fechar porta serial
 ipcMain.handle("close-serial-port", async () => {

@@ -11,6 +11,7 @@ import OptionsDashComponent from "../components/dashbordComponents/OptionsDashCo
 import VideoModalReal from "../components/VideoModalReal";
 import { ConnectionStatus, SerialPortInfo } from "../types";
 import {
+  normalizeSerialData,
   parseResponse,
   requestTemperature,
   requestPressure,
@@ -21,6 +22,7 @@ import {
   setLampState,
   setLedState,
   setNeonState,
+  setLedColors,
 } from "../utils/CommandHelpers";
 
 import SmallDivsComponent from "../components/dashbordComponents/SmallDivsComponent";
@@ -982,8 +984,27 @@ function Dashboard() {
   const [autoConnectionMessage, setAutoConnectionMessage] = useState("");
 
   // Refs para evitar stale closures
-  const handleSerialDataRef = useRef<(data: string) => void | null>(null);
+  const handleSerialDataRef = useRef<((data: string | number[] | Uint8Array) => void) | null>(null);
   const sendCommandRef = useRef<(data: Uint8Array) => Promise<void> | null>(null);
+  const temperatureRef = useRef<number | undefined>(undefined);
+  const pressureRef = useRef<number | undefined>(undefined);
+
+  const [userWeight, setUserWeight] = useState<number | null>(null);
+  const [inclination, setInclination] = useState(0);
+  const [userSex, setUserSex] = useState<
+    "male" | "female" | null
+  >(null);
+  const [caloriesBurned, setCaloriesBurned] = useState(0);
+
+  
+
+  useEffect(() => {
+    temperatureRef.current = temperature;
+  }, [temperature]);
+
+  useEffect(() => {
+    pressureRef.current = pressure;
+  }, [pressure]);
 
   const handleDistanceUpdate = (newDistance: number) => {
     setDistance(newDistance);
@@ -1190,40 +1211,58 @@ function Dashboard() {
   }, []);
 
   // Função para atualizar o valor de temperatura definido pelo usuário
+  useEffect(() => {
+    if (speed <= 0) return;
+
+    const interval = setInterval(() => {
+      const currentTemperature = temperatureRef.current;
+      const currentPressure = pressureRef.current;
+
+      // Temperatura real do sensor
+      if (currentTemperature !== undefined) {
+        setTemperatureReadings(prev => {
+          const readings = [...prev, currentTemperature];
+          const avg =
+            readings.reduce((sum, temp) => sum + temp, 0) / readings.length;
+          setAvgTemperature(avg);
+          return readings;
+        });
+      }
+
+      // Pressão real do sensor
+      if (currentPressure !== undefined) {
+        setPressureReadings(prev => {
+          const readings = [...prev, currentPressure];
+          setAvgPressure(
+            readings.reduce((s, v) => s + v, 0) / readings.length
+          );
+          return readings;
+        });
+      }
+
+      // Velocidade
+      setSpeedReadings(prev => {
+        const readings = [...prev, speed];
+        setAvgSpeed(
+          readings.reduce((s, v) => s + v, 0) / readings.length
+        );
+        return readings;
+      });
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [speed]);
+
   const handleUserTemperatureChange = (value: number) => {
-    setUserSetTemperature(value);
-    console.log("[USER_TEMP] Temperatura definida pelo usuário:", value);
-
-    // Quando o usuário define a temperatura, usamos esse valor para a média
-    if (speed > 0) {
-      // Só registramos na média se estiver em exercício
-      setTemperatureReadings((prev) => [...prev, value]);
-
-      // Calcular média de temperatura
-      const sum = temperatureReadings.reduce((a, b) => a + b, 0) + value;
-      const avg = sum / (temperatureReadings.length + 1);
-      setAvgTemperature(avg);
-      console.log("[USER_TEMP] Média de temperatura atualizada:", avg);
-    }
-  };
+  setUserSetTemperature(value);
+};
 
   // Função para atualizar o valor de pressão definido pelo usuário
   const handleUserPressureChange = (value: number) => {
     setUserSetPressure(value);
-    console.log("[USER_PRESSURE] Pressão definida pelo usuário:", value);
-
-    // Quando o usuário define a pressão, usamos esse valor para a média
-    if (speed > 0) {
-      // Só registramos na média se estiver em exercício
-      setPressureReadings((prev) => [...prev, value]);
-
-      // Calcular média de pressão
-      const sum = pressureReadings.reduce((a, b) => a + b, 0) + value;
-      const avg = sum / (pressureReadings.length + 1);
-      setAvgPressure(avg);
-      console.log("[USER_PRESSURE] Média de pressão atualizada:", avg);
-    }
   };
+
+
 
   const addLog = (message: string) => {
     const timestamp = new Date().toLocaleTimeString();
@@ -1250,93 +1289,51 @@ function Dashboard() {
   }, [temperature]);
 
   // Usamos os efeitos abaixo apenas para o monitoramento da velocidade
-  useEffect(() => {
-    if (speed > 0) {
-      setSpeedReadings((prev) => [...prev, speed]);
 
-      // Calcular média de velocidade
-      const sum = speedReadings.reduce((a, b) => a + b, 0) + speed;
-      const avg = sum / (speedReadings.length + 1);
-      setAvgSpeed(avg);
-      console.log(
-        "[SPEED] Média atualizada:",
-        avg,
-        "Leituras:",
-        speedReadings.length + 1
-      );
-    }
-  }, [speed]);
 
-  const sendCommand = useCallback(
-    async (data: Uint8Array) => {
+// Fila de comandos seriais — garante que nenhum comando seja
+// enviado antes do anterior "assentar" no buffer do ESP32
+const commandQueueRef = useRef<Promise<void>>(Promise.resolve());
+const COMMAND_DELAY_MS = 100;
+
+const sendCommand = useCallback(
+  (data: Uint8Array): Promise<void> => {
+    // Encadeia esse comando depois do anterior na fila
+    const run = commandQueueRef.current.then(async () => {
       if (!connectionStatus.connected || !window.api) {
-        console.log(
-          "[HARDWARE_LOG] ❌ Command blocked - Not connected to device"
-        );
-        console.log("[HARDWARE_LOG] 📊 Connection Status:", connectionStatus);
+        console.log("[HARDWARE_LOG] ❌ Command blocked - Not connected to device");
         return;
       }
 
       try {
-        // Log detailed command information
         const hexString = Array.from(data)
           .map((byte) => byte.toString(16).padStart(2, "0"))
           .join(" ");
 
-        const timestamp = new Date().toISOString();
-        console.log(`[HARDWARE_LOG] 📤 [${timestamp}] SENDING COMMAND`);
-        console.log(
-          `[HARDWARE_LOG] 📤 Raw bytes: [${Array.from(data).join(", ")}]`
-        );
-        console.log(`[HARDWARE_LOG] 📤 Hex format: ${hexString}`);
-        console.log(`[HARDWARE_LOG] 📤 Command length: ${data.length} bytes`);
-        console.log(
-          `[HARDWARE_LOG] 📤 Port: ${connectionStatus.portPath || "Unknown"}`
-        );
-
+        console.log(`[HARDWARE_LOG] 📤 SENDING COMMAND: ${hexString}`);
         addLog(`Sending: ${hexString}`);
 
-        // Send the command
-        if (window.api) {
-          console.log(
-            "[HARDWARE_LOG] 📤 Calling window.api.sendSerialCommand..."
-          );
-          const result = await window.api.sendSerialCommand(data);
+        const result = await window.api.sendSerialCommand(data);
 
-          if (result.success) {
-            console.log("[HARDWARE_LOG] ✅ Command sent successfully");
-            console.log("[HARDWARE_LOG] ✅ API Response:", result);
-          } else {
-            console.log("[HARDWARE_LOG] ❌ Command failed to send");
-            console.log("[HARDWARE_LOG] ❌ Error details:", result.message);
-            console.log("[HARDWARE_LOG] ❌ Full API response:", result);
-            setError(`Failed to send command: ${result.message}`);
-          }
+        if (!result.success) {
+          console.log("[HARDWARE_LOG] ❌ Command failed:", result.message);
+          setError(`Failed to send command: ${result.message}`);
         }
+
+        // Delay obrigatório após CADA comando, antes do próximo poder sair
+        await new Promise((resolve) => setTimeout(resolve, COMMAND_DELAY_MS));
       } catch (err: any) {
-        console.log("[HARDWARE_LOG] 💥 Exception while sending command");
-        console.log(
-          "[HARDWARE_LOG] 💥 Exception type:",
-          err instanceof Error ? err.constructor.name : typeof err
-        );
-        console.log(
-          "[HARDWARE_LOG] 💥 Exception message:",
-          err instanceof Error ? err.message : String(err)
-        );
-        console.log(
-          "[HARDWARE_LOG] 💥 Exception stack:",
-          err instanceof Error ? err.stack : "No stack trace available"
-        );
-        setError(
-          `Error sending command: ${
-            err instanceof Error ? err.message : String(err)
-          }`
-        );
-        console.error(err);
+        console.error("[HARDWARE_LOG] 💥 Exception while sending command", err);
+        setError(`Error sending command: ${err instanceof Error ? err.message : String(err)}`);
       }
-    },
-    [connectionStatus.connected]
-  );
+    });
+
+    // Atualiza a fila (mesmo se der erro, a corrente continua)
+    commandQueueRef.current = run.catch(() => {});
+    return run;
+  },
+  [connectionStatus.connected]
+);
 
   // Sincroniza o ref com sendCommand
   useEffect(() => {
@@ -1388,55 +1385,24 @@ function Dashboard() {
     [connectionStatus.connected, sendCommand]
   );
 
-  // Function to shut down all components
-  const shutdownAllComponents = useCallback(async () => {
-    if (!connectionStatus.connected || !window.api) {
-      console.log("[SHUTDOWN] Not connected, cannot send shutdown commands");
-      return;
-    }
+const shutdownAllComponents = useCallback(async () => {
+  if (!connectionStatus.connected || !window.api) return;
 
-    console.log("[SHUTDOWN] Shutting down all components before redirecting");
-    try {
-      // Set conveyor speed to 0
-      await setSpeedWithCommand(0);
-      console.log("[SHUTDOWN] Set conveyor speed to 0");
-
-      // Set temperature to 0
-      const tempCommand = setHeaterPower(0);
-      await sendCommand(tempCommand);
-      console.log("[SHUTDOWN] Set heater power to 0");
-
-      // Set vacuum to 0
-      const pumpCommand = setPumpPower(0);
-      await sendCommand(pumpCommand);
-      console.log("[SHUTDOWN] Set pump power to 0");
-
-      // Turn off lamp/collagen
-      const lampCommand = setLampState(false);
-      await sendCommand(lampCommand);
-      console.log("[SHUTDOWN] Turned off lamp");
-
-      // Turn off LEDs
-      const ledCommand = setLedState(false);
-      await sendCommand(ledCommand);
-      console.log("[SHUTDOWN] Turned off LEDs");
-
-      // Turn off neon
-      const neonCommand = setNeonState(false);
-      await sendCommand(neonCommand);
-      console.log("[SHUTDOWN] Turned off neon");
-
-      // Set operation mode to STOP/manual
-      const modeCommand = setOperationMode(false);
-      await sendCommand(modeCommand);
-      console.log("[SHUTDOWN] Set operation mode to MANUAL/STOP");
-
-      console.log("[SHUTDOWN] All components have been shut down");
-    } catch (err) {
-      console.error("[SHUTDOWN] Error shutting down components:", err);
-      setError("Failed to shut down all components");
-    }
-  }, [connectionStatus.connected, sendCommand, setSpeedWithCommand]);
+  try {
+    await setSpeedWithCommand(0);
+    await sendCommand(setHeaterPower(0));
+    await sendCommand(setPumpPower(0));
+    await sendCommand(setLampState(false));
+    await sendCommand(setLedState(false));
+    await sendCommand(setNeonState(false));
+    await sendCommand(setLedColors(0, 0, 0, 0, 0, 0));
+    await sendCommand(setOperationMode(false));
+    console.log("[SHUTDOWN] All components have been shut down");
+  } catch (err) {
+    console.error("[SHUTDOWN] Error shutting down components:", err);
+    setError("Failed to shut down all components");
+  }
+}, [connectionStatus.connected, sendCommand, setSpeedWithCommand]);
 
   useEffect(() => {
     if (speed > 0) {
@@ -1445,8 +1411,8 @@ function Dashboard() {
 
     if (prevSpeed > 0 && speed === 0 && hasStartedRunning) {
       // Garantir que temos valores para temperatura e pressão
-      const finalAvgTemp = avgTemperature || userSetTemperature || 0;
-      const finalAvgPressure = avgPressure || userSetPressure || 0;
+      const finalAvgTemp = avgTemperature || temperature || 0;
+      const finalAvgPressure = avgPressure || pressure || 0;
 
       console.log("[EXERCISE_END] Valores finais:", {
         avgTemp: finalAvgTemp,
@@ -1532,7 +1498,7 @@ function Dashboard() {
     };
   }, [speed, hasStartedRunning]);
 
-  const handleSerialData = useCallback((data: string) => {
+  const handleSerialData = useCallback((data: string | number[] | Uint8Array) => {
     const timestamp = new Date().toISOString();
     console.log(`[HARDWARE_LOG] 📥 [${timestamp}] RECEIVED DATA`);
     console.log("[HARDWARE_LOG] 📥 Raw data type:", typeof data);
@@ -1540,21 +1506,13 @@ function Dashboard() {
     console.log("[HARDWARE_LOG] 📥 Raw data content:", data);
 
     try {
-      // Convertendo os dados para um Uint8Array
-      let dataArray: Uint8Array;
-
-      // Ao receber dados da porta serial via IPC, eles vêm como string
-      if (typeof data === "string") {
-        console.log("[HARDWARE_LOG] 📥 Converting string to byte array...");
-        dataArray = new TextEncoder().encode(data);
-        console.log(
-          "[HARDWARE_LOG] 📥 Converted to bytes:",
-          Array.from(dataArray)
-        );
-      } else {
-        console.log("[HARDWARE_LOG] 📥 Data already in binary format");
-        dataArray = data as unknown as Uint8Array;
-      }
+      // Normalize the incoming serial data to a Uint8Array
+      console.log("[HARDWARE_LOG] 📥 Normalizing incoming serial data...");
+      const dataArray = normalizeSerialData(data);
+      console.log(
+        "[HARDWARE_LOG] 📥 Normalized bytes:",
+        Array.from(dataArray)
+      );
 
       // Mostrar dados como hex
       const hexString = Array.from(dataArray)
@@ -1702,7 +1660,7 @@ function Dashboard() {
       console.log("[CONNECTION] Setting up serial data listeners");
 
       // Define o callback para receber dados
-      const onDataReceived = (data: string) => {
+      const onDataReceived = (data: string | number[] | Uint8Array) => {
         console.log("[HARDWARE_LOG] 🔗 📥 Data received callback triggered");
         console.log("[SERIAL_RECEIVED] Dados recebidos do dispositivo:", data);
         if (handleSerialDataRef.current) {
@@ -1794,9 +1752,8 @@ function Dashboard() {
 
       try {
         // Verificar estado atual dos sensores
-        temperatureInitialized =
-          temperature !== undefined && temperature !== null;
-        pressureInitialized = pressure !== undefined && pressure !== null;
+        temperatureInitialized = temperatureRef.current !== undefined;
+        pressureInitialized = pressureRef.current !== undefined;
 
         console.log("[HARDWARE_LOG] 🌡️  📊 Current sensor status:");
         console.log(
@@ -1883,9 +1840,8 @@ function Dashboard() {
         );
 
         // Atualizar status de inicialização após solicitações
-        temperatureInitialized =
-          temperature !== undefined && temperature !== null;
-        pressureInitialized = pressure !== undefined && pressure !== null;
+        temperatureInitialized = temperatureRef.current !== undefined;
+        pressureInitialized = pressureRef.current !== undefined;
 
         // Se os sensores não foram inicializados e ainda estamos dentro do limite de tentativas
         if (
@@ -2204,6 +2160,72 @@ function Dashboard() {
     }
   }, [connectionStatus.connected]);
 
+ useEffect(() => {
+  if (speed <= 0 || userWeight === null) {
+    return;
+  }
+
+  const interval = window.setInterval(() => {
+    const currentTemperature = temperatureRef.current;
+    const currentPressure = pressureRef.current;
+
+    if (
+      currentTemperature === undefined ||
+      currentPressure === undefined
+    ) {
+      return;
+    }
+
+    // Velocidade em metros por minuto
+    const speedMetersPerMinute =
+      (speed * 1000) / 60;
+
+    // VO2
+    const vo2 =
+      0.1 * speedMetersPerMinute +
+      1.8 *
+        speedMetersPerMinute *
+        (inclination / 100) +
+      3.5;
+
+    // Gasto calórico de 1 segundo
+    const kcalBase =
+      (vo2 * userWeight * (1 / 60)) / 200;
+
+    // Fator da temperatura
+    const temperatureFactor = Math.min(
+      1.15,
+      1 +
+        0.10 *
+          ((currentTemperature - 25) / 20)
+    );
+
+    // Fator do vácuo
+    const vacuumFactor =
+      1 +
+      0.08 *
+        (Math.abs(currentPressure) / 50);
+
+    const sexFactor = userSex === "male" ? 1.20 : 1.00;
+
+    const kcalSecond =
+      kcalBase *
+      temperatureFactor *
+      vacuumFactor *
+      sexFactor;
+
+    setCaloriesBurned(
+      (prev) => prev + kcalSecond
+    );
+
+  }, 1000);
+
+  return () => {
+    window.clearInterval(interval);
+  };
+
+}, [speed, userWeight, userSex]);
+
   return (
     <div className="container-dashboard">
       <DashboardHeader onClose={() => setOpenModal(!openModal)}  />
@@ -2239,6 +2261,11 @@ function Dashboard() {
             running={speed > 0}
             onStart={() => setSpeedWithCommand(1)}
             onStop={() => setSpeedWithCommand(0)}
+            onInclinationChange={setInclination}
+            onUserDataSubmit={({ weight, sex }) => {
+              setUserWeight(weight);
+              setUserSex(sex);
+            }}
           />
         </div>
         
@@ -2259,11 +2286,14 @@ function Dashboard() {
              <LedsComponent
               isConnected={connectionStatus.connected}
               onSendCommand={sendCommand}
+              isRunning={speed > 0}  
               /> 
               <CalDistanceComponent
                 isConnected={connectionStatus.connected}
                 onSendCommand={sendCommand}
-                distance={distance}
+                speed={speed}
+                isRunning={speed > 0}
+                onDistanceUpdate={handleDistanceUpdate}
               />
             </div>
             

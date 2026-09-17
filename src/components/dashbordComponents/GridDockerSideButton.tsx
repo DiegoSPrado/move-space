@@ -47,54 +47,9 @@ export default function GridDockerSideButton({
   const [error, setError] = useState("");
   const [showSafetyWarning, setShowSafetyWarning] = useState(false);
   const [neonOn, setNeonOn] = useState<boolean>(false);
-  const animationFrameIdRef = useRef<number | null>(null);
-  const lastDistanceUpdateTimeRef = useRef<number>(0);
-  const onDistanceUpdateRef = useRef(onDistanceUpdate);
 
-  useEffect(() => {
-    onDistanceUpdateRef.current = onDistanceUpdate;
-  }, [onDistanceUpdate]);
 
-  const calculateDistanceIncrement = (deltaTimeMs: number, speedKmh: number) => {
-    return (speedKmh / 3.6) * (deltaTimeMs / 1000);
-  };
-
-  useEffect(() => {
-    if (!isConnected || !isRunning || speed <= 0) {
-      return;
-    }
-    
-    const animate = (now: number) => {
-      if (!lastDistanceUpdateTimeRef.current) {
-        lastDistanceUpdateTimeRef.current = now;
-      }
-
-      const deltaTime = now - lastDistanceUpdateTimeRef.current;
-
-      if (deltaTime >= 1000) {
-        lastDistanceUpdateTimeRef.current = now;
-        const increment = calculateDistanceIncrement(deltaTime, speed);
-
-        setDistance((currentDistance) => {
-          const nextDistance = currentDistance + increment;
-          onDistanceUpdateRef.current?.(nextDistance);
-          return nextDistance;
-        });
-      }
-
-      animationFrameIdRef.current = requestAnimationFrame(animate);
-    };
-
-    animationFrameIdRef.current = requestAnimationFrame(animate);
-
-    return () => {
-      if (animationFrameIdRef.current !== null) {
-        cancelAnimationFrame(animationFrameIdRef.current);
-        animationFrameIdRef.current = null;
-      }
-      lastDistanceUpdateTimeRef.current = 0;
-    };
-  }, [isConnected, isRunning, speed]);
+ 
 
   useEffect(() => {
     if (!isConnected) {
@@ -102,10 +57,10 @@ export default function GridDockerSideButton({
       setPressureSetpoint(1013.2);
       setIsAutoMode(true);
       setHeaterPower(0);
-      setNeonOn(false);
+      setNeonOn(true);
       setDistance(0);
       setIsColagenoOn(false);
-      lastDistanceUpdateTimeRef.current = 0;
+      
     }
   }, [isConnected]);
 
